@@ -285,16 +285,16 @@
             const badge = document.getElementById('risk-badge');
             const card = document.getElementById('trs-card');
             
-            let level = 'Low';
+            let level = 'LOW (低風險)';
             let colorClass = 'bg-emerald-100 text-emerald-700';
             let borderClass = 'border-emerald-500';
 
             if (isOverride || score >= 0.7) {
-                level = 'HIGH (高)';
+                level = 'HIGH (高風險)';
                 colorClass = 'bg-red-100 text-red-700';
                 borderClass = 'border-red-500';
             } else if (score >= 0.3) {
-                level = 'MEDIUM (中)';
+                level = 'MEDIUM (中風險)';
                 colorClass = 'bg-orange-100 text-orange-800';
                 borderClass = 'border-orange-500';
             }
