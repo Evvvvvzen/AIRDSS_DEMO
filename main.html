@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIRDSS 風險評估系統入口</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white h-screen flex flex-col items-center justify-center">
+
+    <div class="text-center mb-10">
+        <h1 class="text-4xl font-bold mb-4 tracking-wider">AIRDSS Hybrid</h1>
+        <p class="text-slate-400">掙脫風險評估輔助系統</p>
+        <div class="mt-2 text-xs text-slate-500 uppercase tracking-widest">Select Environment</div>
+    </div>
+
+    <div class="flex flex-col md:flex-row gap-8">
+        <a href="icu-dashboard.html" class="group w-72 p-8 bg-slate-800 hover:bg-blue-600 rounded-2xl transition-all border border-slate-700 hover:border-blue-400 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 cursor-pointer no-underline">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-4xl">🏥</span>
+                <span class="text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300 group-hover:text-blue-200">INTENSIVE</span>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-white">ICU 重症模式</h2>
+            <p class="text-sm text-slate-400 group-hover:text-blue-100 leading-relaxed">
+                針對重症監測設計。包含 RASS、APACHE II 與高危管路評估模型。
+            </p>
+        </a>
+
+        <a href="ward-dashboard.html" class="group w-72 p-8 bg-slate-800 hover:bg-emerald-600 rounded-2xl transition-all border border-slate-700 hover:border-emerald-400 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 cursor-pointer no-underline">
+            <div class="flex justify-between items-start mb-4">
+                <span class="text-4xl">🛏️</span>
+                <span class="text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300 group-hover:text-emerald-200">GENERAL</span>
+            </div>
+            <h2 class="text-2xl font-bold mb-2 text-white">Ward 病房模式</h2>
+            <p class="text-sm text-slate-400 group-hover:text-emerald-100 leading-relaxed">
+                針對一般病房設計。強化跌倒風險、陪伴狀態與環境因子評估。
+            </p>
+        </a>
+    </div>
+
+    <footer class="absolute bottom-6 text-slate-600 text-xs">
+        AIRDSS System v1.0 | 2026 Build
+    </footer>
+
+</body>
+</html>
