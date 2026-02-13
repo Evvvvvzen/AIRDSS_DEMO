@@ -91,7 +91,7 @@
         }
     </style>
     <script>
-        if (!localStorage.getItem('isLoggedIn')) { window.location.href = 'main.html'; }
+        if (!localStorage.getItem('isLoggedIn')) { window.location.href = 'login.html'; }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -1454,11 +1454,18 @@
                 if (!alertSoundContext) {
                     alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
+                // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
                 if (alertSoundContext.state === 'suspended') {
-                    alertSoundContext.resume().catch(() => {});
+                    alertSoundContext.resume().then(() => {
+                        // resume 成功
+                    }).catch((error) => {
+                        // resume 失敗，靜默處理（不顯示錯誤）
+                        console.debug('AudioContext resume failed:', error);
+                    });
                 }
             } catch (error) {
-                // 靜默處理
+                // 初始化失敗，靜默處理（不顯示錯誤）
+                console.debug('AudioContext initialization failed:', error);
             }
             
             customConfirm("這將會清除目前的資料並產生測試數據，確定嗎？").then(result => {
@@ -3060,26 +3067,18 @@
             // 使用 Web Audio API 生成統一的警示音
             try {
                 // 只在 AudioContext 已初始化且處於 running 狀態時才播放
+                // 注意：不在此處初始化 AudioContext，因為需要用戶手勢
+                // AudioContext 應該在用戶點擊警示音開關按鈕時初始化（toggleAlertSound）
                 if (!alertSoundContext) {
-                    // 如果 AudioContext 未初始化，嘗試初始化（但可能失敗，因為沒有用戶手勢）
-                    try {
-                        alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
-                    } catch (e) {
-                        // 初始化失敗，靜默跳過
-                        return;
-                    }
+                    // AudioContext 未初始化，靜默跳過（不會拋出錯誤）
+                    return;
                 }
                 
-                // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
+                // 如果 AudioContext 處於 suspended 狀態，不嘗試 resume
+                // 因為 resume 也需要用戶手勢，應該在用戶點擊按鈕時處理
                 if (alertSoundContext.state === 'suspended') {
-                    alertSoundContext.resume().catch(() => {
-                        // resume 失敗（通常是因為沒有用戶手勢），靜默跳過
-                        return;
-                    });
-                    // 如果 resume 後狀態仍不是 running，跳過播放
-                    if (alertSoundContext.state !== 'running') {
-                        return;
-                    }
+                    // 靜默跳過，不嘗試 resume（避免拋出錯誤）
+                    return;
                 }
                 
                 // 只有在 running 狀態時才播放
@@ -3121,11 +3120,19 @@
                     if (!alertSoundContext) {
                         alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
                     }
+                    // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
+                    // 這是在用戶手勢（點擊）的上下文中，所以應該可以成功
                     if (alertSoundContext.state === 'suspended') {
-                        alertSoundContext.resume().catch(() => {});
+                        alertSoundContext.resume().then(() => {
+                            // resume 成功，AudioContext 現在應該處於 running 狀態
+                        }).catch((error) => {
+                            // resume 失敗，靜默處理（不顯示錯誤）
+                            console.debug('AudioContext resume failed:', error);
+                        });
                     }
                 } catch (error) {
-                    // 靜默處理
+                    // 初始化失敗，靜默處理（不顯示錯誤）
+                    console.debug('AudioContext initialization failed:', error);
                 }
                 icon.setAttribute('data-lucide', 'volume-2');
                 text.textContent = '警示音';
@@ -4148,7 +4155,7 @@
             customConfirm("確定要登出嗎?").then(result => {
                 if(result) {
                 localStorage.removeItem('isLoggedIn');
-                window.location.href = 'main.html';
+                window.location.href = 'login.html';
             }
             });
         }
