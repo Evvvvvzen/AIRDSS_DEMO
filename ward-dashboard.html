@@ -4,269 +4,350 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIRDSS Ward Risk Dashboard</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: { slate: { 850: '#1e293b' } }
+                }
+            }
+        }
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; } /* 淺綠色背景 */
-        .toggle-checkbox:checked { right: 0; border-color: #10b981; }
-        .toggle-checkbox:checked + .toggle-label { background-color: #10b981; }
-        .input-card { transition: all 0.2s; }
-        .input-card:hover { border-color: #34d399; }
-        .input-group { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        /* 當 CRS 失效時的視覺樣式 */
-        .crs-disabled { opacity: 0.5; pointer-events: none; filter: grayscale(100%); }
+        body { font-family: 'Inter', sans-serif; background-color: #f0fdf4; }
+        .dark body { background-color: #0f172a; }
+        
+        /* 自定義捲軸 */
+        .modal-scroll::-webkit-scrollbar { width: 6px; }
+        .modal-scroll::-webkit-scrollbar-track { background: transparent; }
+        .modal-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        .dark .modal-scroll::-webkit-scrollbar-thumb { background: #475569; }
+        
+        /* 唯讀輸入框樣式優化 */
+        input:disabled, select:disabled { cursor: default; opacity: 0.9; }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 h-screen flex flex-col transition-colors duration-300">
 
-    <header class="bg-emerald-900 text-white px-6 py-4 flex justify-between items-center sticky top-0 z-50 shadow-md">
+    <header class="bg-emerald-900 text-white px-6 py-3 flex justify-between items-center sticky top-0 z-50 shadow-md shrink-0">
         <div class="flex items-center gap-4">
             <div class="bg-emerald-500 px-3 py-1 rounded font-bold text-sm tracking-wide">WARD MODE</div>
-            <h1 class="text-lg font-semibold">AIRDSS Hybrid <span class="text-emerald-200 text-sm font-normal">| 一般病房掙脫風險評估</span></h1>
+            <h1 class="text-lg font-semibold">AIRDSS Hybrid <span class="text-emerald-200 text-sm font-normal">| 一般病房掙脫風險</span></h1>
         </div>
-        <div class="flex items-center gap-3">
-            <div class="text-right mr-2">
-                <div class="text-sm font-bold">病床: 07-A</div>
-                <div class="text-xs text-emerald-200">林阿嬤 (82 F)</div>
-            </div>
-            <button onclick="toggleCRSValidity()" id="btn-crs-status" class="bg-white text-emerald-800 text-xs px-3 py-2 rounded transition font-bold border border-emerald-200 hover:bg-emerald-50">
+        <div class="flex items-center gap-4">
+            <button onclick="toggleCRSValidity()" id="btn-crs-status" class="bg-white text-emerald-800 text-xs px-3 py-2 rounded transition font-bold border border-emerald-200 hover:bg-emerald-50 hidden md:block">
                 🟢 模擬：CRS 資料有效
             </button>
-            <button onclick="window.location.href='index.html'" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs px-3 py-2 rounded transition border border-emerald-600">
-                退出
+            <div class="h-8 w-[1px] bg-emerald-700 hidden md:block"></div>
+
+            <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-800/50 border border-emerald-700/50">
+                <div class="flex flex-col items-end leading-none">
+                    <span class="text-[10px] text-emerald-400/80 font-bold">BATTERY</span>
+                    <span id="battery-text" class="text-xs font-mono font-bold text-white">92%</span>
+                </div>
+                <div class="relative w-6 h-3 border border-emerald-300/50 rounded-sm p-[1px]">
+                    <div id="battery-bar" class="h-full bg-emerald-400 w-[92%] rounded-[1px] transition-all duration-500"></div>
+                    <div class="absolute -right-[3px] top-[3px] w-[2px] h-[4px] bg-emerald-300/50 rounded-r-sm"></div>
+                </div>
+            </div>
+            
+            <div class="text-right hidden md:block">
+                <div class="text-sm font-bold" id="header-bed-info">Loading...</div>
+                <div class="text-xs text-emerald-200" id="header-time">--:--</div>
+            </div>
+            
+            <button onclick="toggleDarkMode()" class="p-2 rounded-full hover:bg-emerald-800 text-emerald-100 transition">
+                <i data-lucide="moon" id="dark-icon" class="w-5 h-5"></i>
+            </button>
+            <button onclick="window.location.href='index.html'" class="bg-emerald-800 hover:bg-emerald-700 text-emerald-100 text-xs px-3 py-2 rounded transition border border-emerald-600 flex items-center gap-2">
+                <i data-lucide="layout-grid" class="w-3 h-3"></i> 返回列表
             </button>
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <div id="override-alert" class="hidden bg-red-600 text-white p-3 text-center font-bold shadow-lg text-sm animate-pulse shrink-0">
+        🚨 警告：偵測到 SpO2 &lt; 88% 持續 ≥2 分鐘，強制判定為極高風險！
+    </div>
 
-        <div class="lg:col-span-5 space-y-6">
+    <main class="flex-1 overflow-hidden relative">
+        <div class="h-full max-w-[1600px] mx-auto p-4 md:p-6">
             
-            <div class="bg-white rounded-xl shadow-sm p-6 border-l-8 border-emerald-500 transition-colors duration-300" id="trs-card">
-                <div class="flex justify-between items-start mb-2">
-                    <h2 class="text-slate-500 text-sm font-bold uppercase tracking-wider">TRS 總風險分數</h2>
-                    <span id="calc-mode-badge" class="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded-full">Hybrid Mode (ARS+CRS)</span>
-                </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
                 
-                <div class="flex justify-between items-end mb-4">
-                    <div>
-                        <span id="trs-score" class="text-6xl font-bold text-slate-800">0.00</span>
-                        <span class="text-slate-400 text-lg">/ 1.0</span>
-                    </div>
-                    <div id="risk-badge" class="px-4 py-2 rounded-lg bg-emerald-100 text-emerald-700 font-bold">
-                        低風險 (Low)
-                    </div>
-                </div>
-
-                <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden flex mb-2">
-                    <div id="bar-ars" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
-                    <div id="bar-crs" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
-                </div>
-                <div class="flex justify-between text-xs text-slate-400 mb-4">
-                    <span id="label-ars">ARS 權重 (60%)</span>
-                    <span id="label-crs">CRS 權重 (40%)</span>
-                </div>
-
-                <div class="bg-emerald-50 p-3 rounded border border-emerald-200">
-                    <h3 class="text-xs font-bold text-emerald-800 mb-1">照護行動建議：</h3>
-                    <p id="action-text" class="text-sm font-medium text-slate-700">常規照護</p>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-sm p-6 relative overflow-hidden">
-                <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-bl">Auto (Sensor)</div>
-                <h3 class="font-bold text-lg mb-4 flex items-center gap-2">
-                    ARS 感測指標 
-                    <span id="ars-total" class="text-blue-600 text-sm bg-blue-50 px-2 py-0.5 rounded">0 / 10分</span>
-                </h3>
-
-                <div class="mb-4">
-                    <h4 class="text-xs font-bold text-slate-400 mb-2">PBS 行為監測 (0-2)</h4>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div class="p-3 bg-slate-50 rounded border border-slate-200">
-                            <div class="text-xs text-slate-500">拉扯頻率</div>
-                            <div class="font-mono text-lg font-bold">0.2 /sec</div>
-                        </div>
-                        <div class="p-3 bg-slate-50 rounded border border-slate-200">
-                            <div class="text-xs text-slate-500">拉力峰值</div>
-                            <div class="font-mono text-lg font-bold">0.5 kg</div>
-                        </div>
-                    </div>
-                    <div class="mt-2 flex gap-2">
-                        <label class="flex items-center gap-2 text-xs cursor-pointer bg-slate-50 px-2 py-1 rounded border border-slate-200 hover:bg-white transition">
-                            <input type="checkbox" id="sim-pull" onchange="updateCalc()" class="rounded text-blue-600">
-                            模擬高頻拉扯 <span class="text-blue-600 font-bold">+1</span>
-                        </label>
-                        <label class="flex items-center gap-2 text-xs cursor-pointer bg-slate-50 px-2 py-1 rounded border border-slate-200 hover:bg-white transition">
-                            <input type="checkbox" id="sim-force" onchange="updateCalc()" class="rounded text-blue-600">
-                            模擬高拉力 <span class="text-blue-600 font-bold">+1</span>
-                        </label>
-                    </div>
-                </div>
-
-                <hr class="my-4 border-slate-100">
-
-                <div>
-                    <h4 class="text-xs font-bold text-slate-400 mb-2">PTS 生理趨勢 (0-8)</h4>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="input-group">
-                            <label class="text-xs text-slate-500 flex justify-between">
-                                HR (bpm) <span id="score-hr" class="font-bold text-blue-600">+0</span>
-                            </label>
-                            <select id="input-hr" onchange="updateCalc()" class="w-full mt-1 bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer">
-                                <option value="0">60-100 (Normal)</option>
-                                <option value="1">101-120 (+1)</option>
-                                <option value="2">> 120 (+2)</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label class="text-xs text-slate-500 flex justify-between">
-                                RR (/min) <span id="score-rr" class="font-bold text-blue-600">+0</span>
-                            </label>
-                            <select id="input-rr" onchange="updateCalc()" class="w-full mt-1 bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer">
-                                <option value="0">&lt; 20 (Normal)</option>
-                                <option value="1">21-30 (+1)</option>
-                                <option value="2">> 30 (+2)</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label class="text-xs text-slate-500 flex justify-between">
-                                SpO2 (%) <span id="score-spo2" class="font-bold text-blue-600">+0</span>
-                            </label>
-                            <select id="input-spo2" onchange="updateCalc()" class="w-full mt-1 bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer">
-                                <option value="0">> 94 (Normal)</option>
-                                <option value="1">90-93 (+1)</option>
-                                <option value="2">&lt; 90 (+2)</option>
-                            </select>
-                        </div>
-                        <div class="input-group">
-                            <label class="text-xs text-slate-500 flex justify-between">
-                                SBP (mmHg) <span id="score-sbp" class="font-bold text-blue-600">+0</span>
-                            </label>
-                            <select id="input-sbp" onchange="updateCalc()" class="w-full mt-1 bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer">
-                                <option value="0">&lt; 120 (Normal)</option>
-                                <option value="1">120-160 (+1)</option>
-                                <option value="2">> 160 (+2)</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="lg:col-span-7">
-            <div class="bg-white rounded-xl shadow-sm p-6 border border-slate-200 relative">
-                
-                <div id="crs-overlay" class="hidden absolute inset-0 z-10 bg-white/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
-                    <div class="bg-slate-800 text-white px-6 py-4 rounded-lg shadow-xl text-center">
-                        <div class="text-xl font-bold mb-1">⚠️ CRS 評估已過期</div>
-                        <div class="text-sm opacity-80">系統已切換至「僅 ARS 模式」以確保安全</div>
-                        <div class="text-xs mt-2 text-slate-400">請盡快更新評估數據</div>
-                    </div>
-                </div>
-
-                <div class="flex justify-between items-center mb-6 border-b pb-4">
-                    <div>
-                        <h3 class="font-bold text-lg flex items-center gap-2">
-                            CRS 臨床評估 (病房版)
-                            <span id="crs-total" class="text-emerald-600 text-sm bg-emerald-50 px-2 py-0.5 rounded">0 / 14分</span>
-                        </h3>
-                        <p class="text-xs text-slate-500 mt-1">關注跌倒、陪伴與環境因子 (權重 40%)</p>
-                    </div>
-                    <button class="text-sm text-emerald-600 hover:underline" onclick="resetCRS()">重置表單</button>
-                </div>
-
-                <div id="crs-form-content" class="space-y-6">
+                <div class="lg:col-span-9 flex flex-col gap-6 h-full overflow-y-auto pr-2 modal-scroll pb-10">
                     
-                    <div class="input-card bg-red-50 p-4 rounded-lg border border-red-100">
-                        <h4 class="text-sm font-bold text-red-700 mb-3 flex justify-between">
-                            1. Fall 跌倒風險評估 (0 或 3)
-                            <span class="text-xs font-normal text-red-500 bg-white px-2 py-1 rounded">高權重因子</span>
-                        </h4>
-                        <div class="flex gap-4">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="radio" name="fall_risk" value="0" checked onchange="updateCalc()" class="w-4 h-4 text-red-600">
-                                <span>非高風險 (0分)</span>
-                            </label>
-                            <label class="flex items-center gap-2 cursor-pointer font-bold text-red-700">
-                                <input type="radio" name="fall_risk" value="3" onchange="updateCalc()" class="w-4 h-4 text-red-600">
-                                <span>⚠️ 高風險族群 (3分)</span>
-                            </label>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border-l-4 border-emerald-500 relative transition-colors" id="trs-card">
+                            <div class="flex justify-between items-start mb-2">
+                                <h2 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">TRS 總風險分數</h2>
+                                <span id="calc-mode-badge" class="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300 px-2 py-0.5 rounded-full border dark:border-slate-600">Hybrid</span>
+                            </div>
+                            <div class="flex justify-between items-end mb-2">
+                                <div>
+                                    <span id="trs-score" class="text-4xl font-bold text-slate-800 dark:text-white">0.00</span>
+                                    <span class="text-slate-400 text-xs">/ 1.0</span>
+                                </div>
+                                <div id="risk-badge" class="px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300">
+                                    LOW
+                                </div>
+                            </div>
+                            <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex mb-2">
+                                <div id="bar-ars" class="bg-blue-500 h-full transition-all duration-500" style="width: 0%"></div>
+                                <div id="bar-crs" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-2">
+                                <span id="label-ars">ARS (60%)</span><span id="label-crs">CRS (40%)</span>
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="input-card bg-slate-50 p-4 rounded-lg border border-slate-200">
-                        <h4 class="text-sm font-bold text-slate-700 mb-3">2. Support 陪伴狀態 (0-1)</h4>
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-slate-600">目前是否有家屬或看護陪伴？</span>
-                            <div class="flex gap-4">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="support_status" value="0" checked onchange="updateCalc()" class="text-emerald-600">
-                                    <span>有陪伴 (0分)</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="support_status" value="1" onchange="updateCalc()" class="text-emerald-600">
-                                    <span class="font-bold text-orange-600">無陪伴 (1分)</span>
-                                </label>
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border dark:border-slate-700 transition-colors" id="patient-status-card">
+                            <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">目前病患狀態</h3>
+                            <div id="patient-status-content" class="space-y-3">
+                                <div class="text-base font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
+                                    <span class="text-slate-500 dark:text-slate-400">目前病患狀態為：</span>
+                                    <span id="patient-status-text" class="text-slate-800 dark:text-white">載入中...</span>
+                                </div>
+                                <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
+                                    <div class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">建議處置項目：</div>
+                                    <div id="patient-action-text" class="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">載入中...</div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="input-card border p-3 rounded-lg">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">3. GCS (0-2)</label>
-                            <select id="input-gcs" onchange="updateCalc()" class="w-full text-sm p-1 rounded">
-                                <option value="0"><8 或 15 (0分)</option>
-                                <option value="1">13-14 (1分)</option>
-                                <option value="2">9-12 (2分)</option>
-                            </select>
-                        </div>
-                        <div class="input-card border p-3 rounded-lg">
-                            <label class="block text-xs font-bold text-slate-500 mb-1">4. Pain (0-2)</label>
-                            <select id="input-pain" onchange="updateCalc()" class="w-full text-sm p-1 rounded">
-                                <option value="0">NRS 0-3 (0分)</option>
-                                <option value="1">NRS 4-6 (1分)</option>
-                                <option value="2">NRS ≥7 (2分)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="input-card border p-3 rounded-lg">
-                            <label class="block text-xs font-bold text-slate-500 mb-2">5. Hx 既往史 (0-1)</label>
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox" id="input-hx" onchange="updateCalc()" class="rounded text-emerald-600">
-                                <span class="text-sm">失智史或譫妄史 (+1)</span>
-                            </label>
-                        </div>
-                        <div class="hidden md:block"></div>
-                    </div>
-
-                    <div class="input-card border p-3 rounded-lg">
-                        <h4 class="text-xs font-bold text-slate-500 mb-2">6. Tube 管路 (0-3)</h4>
-                        <div class="space-y-2">
-                            <div class="flex flex-wrap gap-4 text-sm">
-                                <label><input type="radio" name="ward_tube" value="0" checked onchange="updateCalc()"> 無</label>
-                                <label><input type="radio" name="ward_tube" value="1" onchange="updateCalc()"> 低風險 (IV/Foley)</label>
-                                <label><input type="radio" name="ward_tube" value="2" onchange="updateCalc()"> 高風險 (NG/PICC)</label>
+                    <div class="bg-white dark:bg-slate-800 p-6 rounded-xl border dark:border-slate-700 shadow-sm transition-colors">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    <i data-lucide="line-chart" class="w-5 h-5"></i> 24小時風險趨勢監控
+                                </h2>
+                                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                    TRS = (CRS × 0.4) + (ARS × 0.6)
+                                </p>
                             </div>
-                            <label class="flex items-center gap-2 text-sm text-red-600 cursor-pointer pt-1 border-t border-dashed">
-                                <input type="checkbox" id="ward-tube-exposed" onchange="updateCalc()" class="rounded text-red-600">
-                                <span>管路暴露 (Exposed) +1</span>
-                            </label>
+                            <div class="flex gap-4 text-xs font-mono bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border dark:border-slate-700">
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-500"></span> TRS</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-500"></span> CRS</span>
+                                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> ARS</span>
+                            </div>
+                        </div>
+                        <div class="relative h-80 w-full">
+                            <canvas id="historyChart"></canvas>
                         </div>
                     </div>
 
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-4">
+                        
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 relative overflow-hidden border border-slate-200 dark:border-slate-700 transition-colors">
+                            <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs px-2 py-1 rounded-bl">Auto (Sensor)</div>
+                            <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-slate-800 dark:text-white">
+                                ARS 感測指標 
+                                <span id="ars-total" class="text-blue-600 dark:text-blue-400 text-sm bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded">0 / 10分</span>
+                            </h3>
+
+                            <div class="mb-4">
+                                <h4 class="text-xs font-bold text-slate-400 mb-2">PBS 行為監測 (0-2)</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded border border-slate-200 dark:border-slate-600">
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">拉扯頻率</div>
+                                        <div class="font-mono text-lg font-bold text-slate-700 dark:text-white">0.2 /sec</div>
+                                    </div>
+                                    <div class="p-3 bg-slate-50 dark:bg-slate-700/50 rounded border border-slate-200 dark:border-slate-600">
+                                        <div class="text-xs text-slate-500 dark:text-slate-400">拉力峰值</div>
+                                        <div class="font-mono text-lg font-bold text-slate-700 dark:text-white">0.5 kg</div>
+                                    </div>
+                                </div>
+                                <div class="mt-2 flex gap-2">
+                                    <label class="flex items-center gap-2 text-xs cursor-pointer text-slate-600 dark:text-slate-300">
+                                        <input type="checkbox" id="sim-pull" onchange="updateCalc()" class="rounded text-blue-600 dark:bg-slate-700 dark:border-slate-500">
+                                        模擬高頻拉扯 <span class="text-blue-600 dark:text-blue-400 font-bold">+1</span>
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs cursor-pointer text-slate-600 dark:text-slate-300">
+                                        <input type="checkbox" id="sim-force" onchange="updateCalc()" class="rounded text-blue-600 dark:bg-slate-700 dark:border-slate-500">
+                                        模擬高拉力 <span class="text-blue-600 dark:text-blue-400 font-bold">+1</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <hr class="my-4 border-slate-100 dark:border-slate-700">
+
+                            <div>
+                                <h4 class="text-xs font-bold text-slate-400 mb-2">PTS 生理趨勢 (0-8)</h4>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600">
+                                        <label class="text-xs text-slate-500 dark:text-slate-400 flex justify-between">HR (bpm) <span id="score-hr" class="font-bold text-blue-600 dark:text-blue-400">+0</span></label>
+                                        <select id="input-hr" onchange="updateCalc()" class="w-full mt-1 bg-transparent dark:text-white border-none text-sm font-bold focus:ring-0 p-0 cursor-pointer">
+                                            <option value="0" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">60-100</option>
+                                            <option value="1" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">101-120 (+1)</option>
+                                            <option value="2" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">> 120 (+2)</option>
+                                        </select>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600">
+                                        <label class="text-xs text-slate-500 dark:text-slate-400 flex justify-between">RR (/min) <span id="score-rr" class="font-bold text-blue-600 dark:text-blue-400">+0</span></label>
+                                        <select id="input-rr" onchange="updateCalc()" class="w-full mt-1 bg-transparent dark:text-white border-none text-sm font-bold focus:ring-0 p-0 cursor-pointer">
+                                            <option value="0" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">< 20</option>
+                                            <option value="1" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">21-30 (+1)</option>
+                                            <option value="2" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">> 30 (+2)</option>
+                                        </select>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600">
+                                        <label class="text-xs text-slate-500 dark:text-slate-400 flex justify-between">SpO2 (%) <span id="score-spo2" class="font-bold text-blue-600 dark:text-blue-400">+0</span></label>
+                                        <select id="input-spo2" onchange="updateCalc()" class="w-full mt-1 bg-transparent dark:text-white border-none text-sm font-bold focus:ring-0 p-0 cursor-pointer">
+                                            <option value="0" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">> 94</option>
+                                            <option value="1" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">90-93 (+1)</option>
+                                            <option value="2" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">< 90 (+2)</option>
+                                        </select>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600">
+                                        <label class="text-xs text-slate-500 dark:text-slate-400 flex justify-between">SBP (mmHg) <span id="score-sbp" class="font-bold text-blue-600 dark:text-blue-400">+0</span></label>
+                                        <select id="input-sbp" onchange="updateCalc()" class="w-full mt-1 bg-transparent dark:text-white border-none text-sm font-bold focus:ring-0 p-0 cursor-pointer">
+                                            <option value="0" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">< 120</option>
+                                            <option value="1" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">120-160 (+1)</option>
+                                            <option value="2" class="text-slate-700 bg-white dark:bg-slate-800 dark:text-slate-200">> 160 (+2)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border border-slate-200 dark:border-slate-700 transition-colors relative" id="crs-panel">
+                            
+                            <div id="crs-overlay" class="hidden absolute inset-0 z-10 bg-white/60 dark:bg-slate-900/60 backdrop-blur-[1px] flex items-center justify-center rounded-xl">
+                                <div class="bg-slate-800 dark:bg-slate-700 text-white px-6 py-4 rounded-lg shadow-xl text-center border border-slate-600">
+                                    <div class="text-xl font-bold mb-1">⚠️ CRS 評估已過期</div>
+                                    <div class="text-sm opacity-80">系統已切換至「僅 ARS 模式」以確保安全</div>
+                                </div>
+                            </div>
+
+                            <div class="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700 pb-4">
+                                <div>
+                                    <h3 class="font-bold text-lg flex items-center gap-2 text-slate-800 dark:text-white">
+                                        CRS 臨床評估 (病房版)
+                                        <span id="crs-total" class="text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded">0 / 14分</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">權重 40% (跌倒/陪伴/管路)</p>
+                                </div>
+                                <span class="text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 px-2 py-1 rounded border dark:border-slate-600">Read Only</span>
+                            </div>
+
+                            <div class="space-y-6 opacity-90">
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div class="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-100 dark:border-red-900/50">
+                                        <h4 class="text-sm font-bold text-red-700 dark:text-red-400 mb-2">1. Fall 跌倒風險評估</h4>
+                                        <div class="flex gap-4 text-xs">
+                                            <label class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                                                <input type="radio" name="fall_risk" value="0" checked disabled class="accent-red-600">
+                                                <span>非高風險 (0分)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 font-bold text-red-700 dark:text-red-400">
+                                                <input type="radio" name="fall_risk" value="3" disabled class="accent-red-600">
+                                                <span>⚠️ 高風險族群 (3分)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-100 dark:border-slate-600">
+                                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">2. Support 陪伴狀態</h4>
+                                        <div class="flex gap-4 text-xs">
+                                            <label class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                                                <input type="radio" name="support_status" value="0" checked disabled class="accent-emerald-600">
+                                                <span>有陪伴 (0分)</span>
+                                            </label>
+                                            <label class="flex items-center gap-2 text-orange-600 dark:text-orange-400 font-bold">
+                                                <input type="radio" name="support_status" value="1" disabled class="accent-emerald-600">
+                                                <span>無陪伴 (1分)</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">3. GCS (0-2)</h4>
+                                        <select id="input-gcs" class="w-full p-2 rounded border border-slate-300 dark:border-slate-500 text-sm bg-white dark:bg-slate-800 dark:text-white" disabled>
+                                            <option value="0">&lt;8 或 15</option><option value="1">13-14</option><option value="2">9-12</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">4. Pain (0-2)</h4>
+                                        <select id="input-pain" class="w-full p-2 rounded border border-slate-300 dark:border-slate-500 text-sm bg-white dark:bg-slate-800 dark:text-white" disabled>
+                                            <option value="0">0-3 (0分)</option><option value="1">4-6 (1分)</option><option value="2">≥7 (2分)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">5. Hx 既往史 (0-1)</h4>
+                                        <label class="flex items-center gap-2 p-2 border border-slate-200 dark:border-slate-500 rounded bg-white dark:bg-slate-800">
+                                            <input type="checkbox" id="input-hx" class="rounded accent-emerald-600" disabled>
+                                            <span class="text-sm text-slate-600 dark:text-slate-300">失智史或譫妄史</span>
+                                        </label>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-700 dark:text-slate-300 mb-2">6. Tube 管路 (0-3)</h4>
+                                        <div class="flex flex-col gap-1 text-xs">
+                                            <div class="flex gap-2 text-slate-600 dark:text-slate-300">
+                                                <label><input type="radio" name="ward_tube" value="0" checked disabled class="accent-emerald-600"> 無</label>
+                                                <label><input type="radio" name="ward_tube" value="1" disabled class="accent-emerald-600"> 低風險</label>
+                                                <label><input type="radio" name="ward_tube" value="2" disabled class="accent-emerald-600"> 高風險</label>
+                                            </div>
+                                            <label class="flex items-center gap-1 text-red-600 dark:text-red-400 mt-1">
+                                                <input type="checkbox" id="ward-tube-exposed" disabled class="accent-red-600"> 暴露 +1
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <div class="lg:col-span-3 h-full flex flex-col min-h-0">
+                    <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm border dark:border-slate-700 flex flex-col h-full overflow-hidden transition-colors">
+                        <div class="p-4 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                            <h3 class="font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <i data-lucide="clipboard-list" class="w-4 h-4 text-blue-500"></i> 護理紀錄
+                            </h3>
+                            <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Timeline & Logs</p>
+                        </div>
+                        
+                        <div class="flex-1 overflow-y-auto p-4 space-y-0 relative modal-scroll min-h-0" id="full-timeline" style="max-height: 100%;">
+                            <div class="absolute left-6 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700 -z-10"></div>
+                            <div class="text-center text-slate-400 text-xs py-10">載入中...</div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
-
     </main>
 
     <script>
-        let isCRSValid = true;
+        lucide.createIcons();
 
-        // 切換 CRS 有效性模擬
+        // Dark Mode Logic
+        if (localStorage.getItem('darkMode') === 'true') {
+            document.documentElement.classList.add('dark');
+            document.getElementById('dark-icon').setAttribute('data-lucide', 'sun');
+        }
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+            const icon = document.getElementById('dark-icon');
+            icon.setAttribute('data-lucide', isDark ? 'sun' : 'moon');
+            lucide.createIcons();
+            loadDataAndRender(); 
+        }
+
+        let isCRSValid = true;
+        // 切換 CRS 有效性
         function toggleCRSValidity() {
             isCRSValid = !isCRSValid;
             const btn = document.getElementById('btn-crs-status');
@@ -279,159 +360,396 @@
                 btn.classList.replace('border-red-200', 'border-emerald-200');
                 btn.classList.replace('hover:bg-red-50', 'hover:bg-emerald-50');
                 overlay.classList.add('hidden');
-                modeBadge.innerText = "Hybrid Mode (ARS+CRS)";
+                modeBadge.innerText = "Hybrid";
             } else {
                 btn.innerHTML = "🔴 模擬：CRS 資料過期";
                 btn.classList.replace('text-emerald-800', 'text-red-800');
                 btn.classList.replace('border-emerald-200', 'border-red-200');
                 btn.classList.replace('hover:bg-emerald-50', 'hover:bg-red-50');
                 overlay.classList.remove('hidden');
-                modeBadge.innerText = "Safety Mode (ARS Only)";
+                modeBadge.innerText = "ARS Only";
             }
             updateCalc();
         }
 
-        // 行動建議
-        function getActionText(score) {
-            if (score >= 0.7) return "立即床邊評估、保護管路、通報"; // High
-            if (score >= 0.3) return "補陪伴、處理不適、檢查管路"; // Medium (Ward specific)
-            return "常規照護"; // Low
+        const urlParams = new URLSearchParams(window.location.search);
+        const bedNum = urlParams.get('bed');
+        
+        // 警示定義映射表（與 index.html 一致）
+        const alertDefinitions = {
+            'hypoxemia': { condition: '持續低血氧: SpO2 < 88% 且持續 ≥ 2 分鐘', uiText: '生理危急, 持續嚴重低血氧', action: '立即床邊評估、給氧與通報', severity: 'critical', priority: 1 },
+            'hypotension': { condition: '持續低血壓 (MAP/BP): MAP < 65 或收縮壓 (SBP) 波動 ≥ 20%', uiText: '生理危急, 持續嚴重低血壓', action: '立即床邊評估與通報', severity: 'critical', priority: 1 },
+            'tachycardia': { condition: '持續心搏過速: HR > 140 且持續 ≥ 5 分鐘', uiText: '生理危急: 持續心搏過速', action: '立即床邊評估與通報', severity: 'critical', priority: 1 },
+            'high_struggle': { condition: '高強度掙脫: 同時出現高頻拉扯與高拉力', uiText: '行為危急: 高強度掙脫行為', action: '立即床邊查看約束裝置', severity: 'critical', priority: 1 },
+            'high_risk': { condition: '高風險 (TRS ≥ 0.60)', uiText: '高風險: 建議立即介入處置', action: '立即床邊評估、預防管路滑脫、通報', severity: 'high', priority: 2 },
+            'medium_risk': { condition: '中風險 (0.30 ≤ TRS < 0.60)', uiText: '中風險: 建議加強觀察並排除相關因素', action: '提高床邊巡視、評估與藥物調整、通報', severity: 'medium', priority: 3 },
+            'low_risk': { condition: '低風險 (TRS < 0.30)', uiText: '低風險: 維持常規照護', action: '例行監測', severity: 'low', priority: 4 },
+            'restraint_check_30_ward_family': { condition: '約束查核時間30分鐘(病房/有家屬)', uiText: '約束查核時間', action: '檢查約束裝置及評估', severity: 'info', priority: 5 },
+            'restraint_check_60_ward_no_family': { condition: '約束查核時間60分鐘(病房/無家屬)', uiText: '約束查核時間', action: '檢查約束裝置及評估', severity: 'info', priority: 5 },
+            'assessment_missing': { condition: '評估缺失', uiText: 'CRS 無效, 自動監測 ARS', action: '檢視評估項目', severity: 'warning', priority: 3 },
+            'device_detached': { condition: '裝置脫落', uiText: '未感應到裝置', action: '立即床邊評估與檢視裝置', severity: 'critical', priority: 1 },
+            'low_battery': { condition: '電量', uiText: '裝置電量不足', action: '請更換裝置', severity: 'warning', priority: 3 },
+            'pain_score': { condition: 'NRS/CPOT分數', uiText: 'NRS/CPOT分數大於4', action: '床邊評估與給予止痛藥物', severity: 'warning', priority: 3 }
+        };
+        
+        // 獲取主要警示（根據 TRS 和當前狀態）
+        function getPatientStatusAlert(trs, crsData, arsData, record) {
+            const alerts = [];
+            
+            // 根據 TRS 判斷風險等級
+            if (trs >= 0.60) {
+                alerts.push({ type: 'high_risk', ...alertDefinitions.high_risk });
+            } else if (trs >= 0.30) {
+                alerts.push({ type: 'medium_risk', ...alertDefinitions.medium_risk });
+            } else {
+                alerts.push({ type: 'low_risk', ...alertDefinitions.low_risk });
+            }
+            
+            // 檢測疼痛分數
+            if (crsData && crsData.pain && parseInt(crsData.pain) >= 2) {
+                alerts.push({ type: 'pain_score', ...alertDefinitions.pain_score });
+            }
+            
+            // 檢測高強度掙脫（與 index.html 中的 detectBedAlerts 邏輯一致）
+            // 條件：10秒2次（即 0.2次/秒）與 0.5kg 的拉力
+            if (arsData) {
+                const pullFreq = parseFloat(arsData.pullFreq) || 0;
+                const maxForce = parseFloat(arsData.maxForce) || 0;
+                if (pullFreq >= 0.2 && maxForce >= 0.5) {
+                    alerts.push({ type: 'high_struggle', ...alertDefinitions.high_struggle });
+                }
+            }
+            
+            // 按優先級排序
+            alerts.sort((a, b) => a.priority - b.priority);
+            return alerts.length > 0 ? alerts[0] : null;
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (!bedNum) {
+                document.getElementById('header-bed-info').innerText = "未指定";
+                return;
+            }
+            loadDataAndRender();
+        });
+
+        let chartInstance = null;
+
+        function loadDataAndRender() {
+            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
+            const record = allBeds.find(b => b.bed_number === bedNum);
+
+            if (!record) { alert("找不到資料"); return; }
+
+            // 0. 顯示病床號和病歷號
+            const bedDisplay = record.medical_record_id 
+                ? `${bedNum} / ${record.medical_record_id}`
+                : bedNum;
+            document.getElementById('header-bed-info').innerText = bedDisplay;
+
+            document.getElementById('header-time').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+
+            // 1. 填入 Ward CRS 資料 (Mapping)
+            if (record.crs) {
+                // Fall Risk (Value 0 or 3)
+                const fVal = record.crs.fall || 0;
+                const fRadio = document.querySelector(`input[name="fall_risk"][value="${fVal}"]`);
+                if(fRadio) fRadio.checked = true;
+
+                // Support (Value 0 or 1)
+                const sVal = record.crs.support || 0;
+                const sRadio = document.querySelector(`input[name="support_status"][value="${sVal}"]`);
+                if(sRadio) sRadio.checked = true;
+
+                // GCS & Pain
+                document.getElementById('input-gcs').value = record.crs.gcs || 0;
+                document.getElementById('input-pain').value = record.crs.pain || 0;
+
+                // Hx
+                document.getElementById('input-hx').checked = (record.crs.hx == 1);
+
+                // Tube
+                const tVal = record.crs.tube || 0;
+                const tRadio = document.querySelector(`input[name="ward_tube"][value="${tVal}"]`);
+                if(tRadio) tRadio.checked = true;
+                document.getElementById('ward-tube-exposed').checked = (record.crs.tubeExposed == 1);
+            }
+
+            // Status Update (已移除 card-status 和 card-duration，狀態現在通過 patient-status-text 顯示)
+            // 狀態信息現在通過 updateCalc() 中的 getPatientStatusAlert() 來更新
+
+            // 2. Calc
+            updateCalc();
+
+            // 3. Timeline
+            renderTimeline(record.timeline);
+
+            // 更新電池電量（從 record.voltage 讀取，如果沒有則預設為 100%）
+            const batteryLevel = record.voltage !== undefined ? record.voltage : 100;
+            updateBatteryStatus(batteryLevel);
         }
 
         function updateCalc() {
-            // --- 1. ARS (0-10) - Now using Select inputs for PTS ---
+            // ARS Logic
             let pbs = 0;
-            if(document.getElementById('sim-pull').checked) pbs += 1;
-            if(document.getElementById('sim-force').checked) pbs += 1;
-
+            if(document.getElementById('sim-pull').checked) pbs++;
+            if(document.getElementById('sim-force').checked) pbs++;
             let pts = 0;
-            // HR [cite: 113]
-            const valHr = document.getElementById('input-hr').value;
-            pts += parseInt(valHr);
-            document.getElementById('score-hr').innerText = `+${valHr}`;
+            pts += parseInt(document.getElementById('input-hr').value);
+            pts += parseInt(document.getElementById('input-rr').value);
+            pts += parseInt(document.getElementById('input-spo2').value);
+            pts += parseInt(document.getElementById('input-sbp').value);
 
-            // RR [cite: 113]
-            const valRr = document.getElementById('input-rr').value;
-            pts += parseInt(valRr);
-            document.getElementById('score-rr').innerText = `+${valRr}`;
+            // Update ARS UI
+            document.getElementById('score-hr').innerText = `+${document.getElementById('input-hr').value}`;
+            document.getElementById('score-rr').innerText = `+${document.getElementById('input-rr').value}`;
+            document.getElementById('score-spo2').innerText = `+${document.getElementById('input-spo2').value}`;
+            document.getElementById('score-sbp').innerText = `+${document.getElementById('input-sbp').value}`;
 
-            // SpO2 [cite: 113]
-            const valSpo2 = document.getElementById('input-spo2').value;
-            pts += parseInt(valSpo2);
-            document.getElementById('score-spo2').innerText = `+${valSpo2}`;
-
-            // SBP [cite: 113]
-            const valSbp = document.getElementById('input-sbp').value;
-            pts += parseInt(valSbp);
-            document.getElementById('score-sbp').innerText = `+${valSbp}`;
-
-            let rawArs = pbs + pts;
-            // Cap rawArs at 10 if necessary, though logical max is 2+8=10
+            let rawArs = pbs + pts; 
             let normArs = rawArs / 10;
             document.getElementById('ars-total').innerText = `${rawArs} / 10分`;
+            // card-ars 元素已移除，不再更新
 
-            // --- 2. CRS (0-14) Ward Version ---
+            // Ward CRS Logic
+            let score = 0;
             // Fall
-            let fallScore = 0;
-            document.getElementsByName('fall_risk').forEach(el => {
-                if(el.checked) fallScore = parseInt(el.value);
-            });
-
+            const fRadio = document.querySelector('input[name="fall_risk"]:checked');
+            if(fRadio) score += parseInt(fRadio.value);
             // Support
-            let supportScore = 0;
-            document.getElementsByName('support_status').forEach(el => {
-                if(el.checked) supportScore = parseInt(el.value);
-            });
+            const sRadio = document.querySelector('input[name="support_status"]:checked');
+            if(sRadio) score += parseInt(sRadio.value);
+            // GCS/Pain
+            score += parseInt(document.getElementById('input-gcs').value);
+            score += parseInt(document.getElementById('input-pain').value);
+            // Hx
+            if(document.getElementById('input-hx').checked) score += 1;
+            // Tube
+            const tRadio = document.querySelector('input[name="ward_tube"]:checked');
+            if(tRadio) score += parseInt(tRadio.value);
+            if(document.getElementById('ward-tube-exposed').checked) score += 1;
 
-            // GCS, Pain, Hx
-            let gcsScore = parseInt(document.getElementById('input-gcs').value);
-            let painScore = parseInt(document.getElementById('input-pain').value);
-            let hxScore = document.getElementById('input-hx').checked ? 1 : 0;
+            if(score > 14) score = 14;
+            let normCrs = score / 14;
+            // card-crs 元素已移除，不再更新
+            document.getElementById('crs-total').innerText = `${score} / 14分`;
 
-            // Tube (Ward)
-            let tubeBase = 0;
-            document.getElementsByName('ward_tube').forEach(el => {
-                if(el.checked) tubeBase = parseInt(el.value);
-            });
-            let tubeExposed = document.getElementById('ward-tube-exposed').checked ? 1 : 0;
-            let tubeScore = tubeBase + tubeExposed;
-            if(tubeScore > 3) tubeScore = 3; // Max cap
-
-            let rawCrs = fallScore + supportScore + gcsScore + painScore + hxScore + tubeScore;
-            // Cap at 14
-            if(rawCrs > 14) rawCrs = 14; 
-            let normCrs = rawCrs / 14;
-
-            document.getElementById('crs-total').innerText = `${rawCrs} / 14分`;
-
-            // --- 3. TRS Calculation ---
+            // TRS Logic (Hybrid or ARS Only)
             let trs = 0;
-            let arsDisplayWidth = 0;
-            let crsDisplayWidth = 0;
+            let arsWidth = 0, crsWidth = 0;
 
-            if (isCRSValid) {
-                // Hybrid Calculation
+            if(isCRSValid) {
                 trs = (0.6 * normArs) + (0.4 * normCrs);
-                arsDisplayWidth = (0.6 * normArs) * 100;
-                crsDisplayWidth = (0.4 * normCrs) * 100;
-                
-                document.getElementById('label-ars').innerText = "ARS 權重 (60%)";
-                document.getElementById('label-crs').innerText = "CRS 權重 (40%)";
+                arsWidth = (0.6 * normArs) * 100;
+                crsWidth = (0.4 * normCrs) * 100;
+                document.getElementById('label-ars').innerText = "ARS (60%)";
+                document.getElementById('label-crs').innerText = "CRS (40%)";
                 document.getElementById('label-crs').classList.remove('line-through', 'opacity-50');
             } else {
-                // Safety Mode: Use ARS Only
-                trs = normArs; 
-                arsDisplayWidth = normArs * 100;
-                crsDisplayWidth = 0;
-
-                document.getElementById('label-ars').innerText = "ARS 權重 (100%)";
-                document.getElementById('label-crs').innerText = "CRS 無效 (0%)";
+                trs = normArs; // Fallback
+                arsWidth = normArs * 100;
+                crsWidth = 0;
+                document.getElementById('label-ars').innerText = "ARS (100%)";
+                document.getElementById('label-crs').innerText = "CRS 無效";
                 document.getElementById('label-crs').classList.add('line-through', 'opacity-50');
             }
 
-            // Update UI
             document.getElementById('trs-score').innerText = trs.toFixed(2);
-            document.getElementById('bar-ars').style.width = `${arsDisplayWidth}%`;
-            document.getElementById('bar-crs').style.width = `${crsDisplayWidth}%`;
+            document.getElementById('bar-ars').style.width = `${arsWidth}%`;
+            document.getElementById('bar-crs').style.width = `${crsWidth}%`;
 
-            // Risk Badge
+            // Badge & Action
             const badge = document.getElementById('risk-badge');
             const card = document.getElementById('trs-card');
+            const override = !document.getElementById('override-alert').classList.contains('hidden');
+
+            // 獲取當前記錄數據
+            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
+            const record = allBeds.find(b => b.bed_number === bedNum);
+            const crsData = record?.crs || {};
+            const arsData = record?.ars || {};
             
-            if (trs >= 0.7) {
-                badge.innerText = "HIGH (高風險)";
-                badge.className = "px-4 py-2 rounded-lg font-bold bg-red-100 text-red-700";
-                card.classList.remove('border-emerald-500', 'border-yellow-500');
-                card.classList.add('border-red-500');
-            } else if (trs >= 0.3) {
-                badge.innerText = "MEDIUM (中風險)";
-                badge.className = "px-4 py-2 rounded-lg font-bold bg-yellow-100 text-yellow-800";
-                card.classList.remove('border-emerald-500', 'border-red-500');
-                card.classList.add('border-yellow-500');
+            // 獲取主要警示
+            const primaryAlert = getPatientStatusAlert(trs, crsData, arsData, record);
+            
+            // 更新病患狀態顯示
+            const statusTextEl = document.getElementById('patient-status-text');
+            const actionTextEl = document.getElementById('patient-action-text');
+            
+            if (primaryAlert) {
+                statusTextEl.innerText = primaryAlert.uiText;
+                actionTextEl.innerText = primaryAlert.action;
             } else {
-                badge.innerText = "LOW (低風險)";
-                badge.className = "px-4 py-2 rounded-lg font-bold bg-emerald-100 text-emerald-700";
-                card.classList.remove('border-red-500', 'border-yellow-500');
-                card.classList.add('border-emerald-500');
+                statusTextEl.innerText = '低風險: 維持常規照護';
+                actionTextEl.innerText = '例行監測';
             }
 
-            document.getElementById('action-text').innerText = getActionText(trs);
+            if(override || trs >= 0.7) {
+                badge.innerText = "HIGH"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
+                card.classList.remove('border-emerald-500', 'border-yellow-500'); card.classList.add('border-red-500');
+            } else if (trs >= 0.3) {
+                badge.innerText = "MEDIUM"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
+                card.classList.remove('border-emerald-500', 'border-red-500'); card.classList.add('border-yellow-500');
+            } else {
+                badge.innerText = "LOW"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300";
+                card.classList.remove('border-red-500', 'border-yellow-500'); card.classList.add('border-emerald-500');
+            }
+
+            renderChart((trs * 10).toFixed(1), rawArs, score);
         }
 
-        function resetCRS() {
-            document.getElementsByName('fall_risk')[0].checked = true;
-            document.getElementsByName('support_status')[0].checked = true;
-            document.getElementById('input-gcs').value = 0;
-            document.getElementById('input-pain').value = 0;
-            document.getElementById('input-hx').checked = false;
-            document.getElementsByName('ward_tube')[0].checked = true;
-            document.getElementById('ward-tube-exposed').checked = false;
-            updateCalc();
+        function renderChart(trs, ars, crs) {
+            const ctx = document.getElementById('historyChart').getContext('2d');
+            if(chartInstance) chartInstance.destroy();
+
+            const labels = [], dTRS = [], dARS = [], dCRS = [];
+            const now = new Date();
+            
+            for(let i=23; i>=0; i--) {
+                labels.push(`${new Date(now - i*3600000).getHours()}:00`);
+                if(i===0) {
+                    dTRS.push(trs); dARS.push(ars); dCRS.push(crs);
+                } else {
+                    // Simulation (Raw Score Logic)
+                    let sArs = Math.max(0, Math.min(10, ars + Math.floor(Math.random()*3 - 1)));
+                    let sCrs = Math.max(0, Math.min(14, crs + Math.floor(Math.random()*3 - 1)));
+                    
+                    // Recalc simulated TRS based on mode
+                    let sTrs = 0;
+                    if(isCRSValid) {
+                        // Formula: (ARS/10 * 0.6 + CRS/14 * 0.4) * 10
+                        sTrs = ((sArs/10)*0.6 + (sCrs/14)*0.4) * 10;
+                    } else {
+                        sTrs = sArs;
+                    }
+                    
+                    dTRS.push(sTrs.toFixed(1));
+                    dARS.push(sArs); dCRS.push(sCrs);
+                }
+            }
+
+            const isDark = document.documentElement.classList.contains('dark');
+            const colorText = isDark ? '#94a3b8' : '#64748b';
+            const colorGrid = isDark ? '#334155' : '#f1f5f9';
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        { 
+                            label: 'TRS 總風險 (0-10)', 
+                            data: dTRS, 
+                            borderColor: '#ef4444', // Red-500 (統一為紅色)
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)', 
+                            borderWidth: 3, 
+                            tension: 0.4, 
+                            fill: true, 
+                            pointRadius: 0, 
+                            pointHoverRadius: 6 
+                        },
+                        { 
+                            label: 'CRS 臨床評估 (0-14)', 
+                            data: dCRS, 
+                            borderColor: '#3b82f6', // Blue-500 (統一為藍色)
+                            backgroundColor: 'transparent',
+                            borderWidth: 2, 
+                            borderDash: [5, 5], 
+                            tension: 0.3, 
+                            pointRadius: 0 
+                        },
+                        { 
+                            label: 'ARS 感測指標 (0-10)', 
+                            data: dARS, 
+                            borderColor: '#10b981', // Emerald-500 (統一為綠色)
+                            backgroundColor: 'transparent',
+                            borderWidth: 2, 
+                            tension: 0.3, 
+                            pointRadius: 0 
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { color: colorText, padding: 20 } },
+                        tooltip: {
+                            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+                            titleColor: isDark ? '#fff' : '#0f172a',
+                            bodyColor: isDark ? '#cbd5e1' : '#334155',
+                            borderColor: colorGrid,
+                            borderWidth: 1,
+                            padding: 10
+                        }
+                    },
+                    scales: {
+                        x: { grid: { color: colorGrid }, ticks: { color: colorText, maxTicksLimit: 8 } },
+                        y: { grid: { color: colorGrid }, ticks: { color: colorText }, beginAtZero: true, suggestedMax: 15 }
+                    }
+                }
+            });
         }
 
-        // Init
-        updateCalc();
 
+        function renderTimeline(timeline) {
+            const container = document.getElementById('full-timeline');
+            container.innerHTML = '<div class="absolute left-6 top-4 bottom-4 w-0.5 bg-slate-200 dark:bg-slate-700 -z-10"></div>';
+            
+            if(!timeline || timeline.length === 0) {
+                container.innerHTML += '<div class="text-slate-400 text-sm text-center py-10">尚無紀錄</div>';
+                return;
+            }
+
+            const logs = [...timeline].sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            logs.forEach(log => {
+                const date = new Date(log.timestamp);
+                const timeStr = date.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                const dateStr = date.toLocaleDateString([], {month:'2-digit', day:'2-digit'});
+                
+                let icon = 'file-text', color = 'blue';
+                if(log.type === 'create') { icon = 'plus'; color = 'emerald'; }
+                if(log.type === 'edit') { icon = 'edit-3'; color = 'amber'; }
+
+                let bgClass = `bg-${color}-100 dark:bg-${color}-900/30`;
+                let textClass = `text-${color}-600 dark:text-${color}-400`;
+
+                const div = document.createElement('div');
+                div.className = "flex gap-4 mb-4 relative items-start animate-fade-in-up";
+                div.innerHTML = `
+                    <div class="w-12 h-12 rounded-full ${bgClass} ${textClass} flex items-center justify-center shrink-0 border-4 border-white dark:border-slate-800 shadow-sm z-10">
+                        <i data-lucide="${icon}" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex-1 bg-slate-50 dark:bg-slate-700/50 rounded-lg p-3 border border-slate-100 dark:border-slate-600 hover:shadow-md transition">
+                        <div class="flex justify-between items-center mb-1 border-b border-slate-200 dark:border-slate-600 pb-1">
+                            <span class="font-bold text-slate-700 dark:text-slate-200 text-sm">${log.author || 'Admin'}</span>
+                            <span class="text-xs text-slate-400 font-mono">${dateStr} ${timeStr}</span>
+                        </div>
+                        <p class="text-slate-600 dark:text-slate-300 text-xs leading-relaxed break-words">${log.content}</p>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+    // --- 電池控制邏輯 (Ward) ---
+        function updateBatteryStatus(level) {
+            const bar = document.getElementById('battery-bar');
+            const text = document.getElementById('battery-text');
+            
+            bar.style.width = `${level}%`;
+            text.innerText = `${level}%`;
+
+            if (level > 20) {
+                bar.className = "h-full bg-emerald-400 w-full rounded-[1px] transition-all duration-500";
+                text.className = "text-xs font-mono font-bold text-white";
+            } else {
+                // 低電量警示 (橘紅色)
+                bar.className = "h-full bg-red-400 w-full rounded-[1px] transition-all duration-500 animate-pulse";
+                text.className = "text-xs font-mono font-bold text-red-300 animate-pulse";
+            }
+        }
     </script>
 </body>
 </html>

@@ -3,48 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AIRDSS 風險評估系統入口</title>
+    <title>登入 - 智慧約束監控系統</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; }
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f1f5f9; }
+        .login-bg { 
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); 
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-white h-screen flex flex-col items-center justify-center">
+<body class="flex items-center justify-center h-screen login-bg">
 
-    <div class="text-center mb-10">
-        <h1 class="text-4xl font-bold mb-4 tracking-wider">AIRDSS Hybrid</h1>
-        <p class="text-slate-400">掙脫風險評估輔助系統</p>
-        <div class="mt-2 text-xs text-slate-500 uppercase tracking-widest">Select Environment</div>
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all hover:scale-[1.01]">
+        
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
+                <i data-lucide="activity" class="w-8 h-8"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-slate-800">智慧約束監控系統</h1>
+            <p class="text-sm text-slate-500 mt-1">Smart Restraint Monitoring System</p>
+        </div>
+
+        <form onsubmit="handleLogin(event)" class="space-y-6">
+            
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">使用者帳號</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </span>
+                    <input type="text" id="username" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="請輸入帳號 (admin)" required>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-2">密碼</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400">
+                        <i data-lucide="lock" class="w-5 h-5"></i>
+                    </span>
+                    <input type="password" id="password" class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition" placeholder="請輸入密碼 (1234)" required>
+                </div>
+            </div>
+
+            <div id="error-msg" class="hidden bg-red-50 text-red-600 text-sm p-3 rounded-lg flex items-center gap-2">
+                <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                帳號或密碼錯誤，請重試。
+            </div>
+
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-lg transition duration-200 flex justify-center items-center gap-2">
+                登入系統 <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+
+            <div class="text-center text-xs text-slate-400 mt-4">
+                僅供授權之醫護人員使用 | System v1.0
+            </div>
+        </form>
     </div>
 
-    <div class="flex flex-col md:flex-row gap-8">
-        <a href="icu-dashboard.html" class="group w-72 p-8 bg-slate-800 hover:bg-blue-600 rounded-2xl transition-all border border-slate-700 hover:border-blue-400 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 cursor-pointer no-underline">
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-4xl">🏥</span>
-                <span class="text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300 group-hover:text-blue-200">INTENSIVE</span>
-            </div>
-            <h2 class="text-2xl font-bold mb-2 text-white">ICU 重症模式</h2>
-            <p class="text-sm text-slate-400 group-hover:text-blue-100 leading-relaxed">
-                針對重症監測設計。包含 RASS、APACHE II 與高危管路評估模型。
-            </p>
-        </a>
+    <script>
+        lucide.createIcons();
 
-        <a href="ward-dashboard.html" class="group w-72 p-8 bg-slate-800 hover:bg-emerald-600 rounded-2xl transition-all border border-slate-700 hover:border-emerald-400 shadow-xl hover:shadow-2xl transform hover:-translate-y-1 cursor-pointer no-underline">
-            <div class="flex justify-between items-start mb-4">
-                <span class="text-4xl">🛏️</span>
-                <span class="text-xs font-bold bg-slate-900 px-2 py-1 rounded text-slate-300 group-hover:text-emerald-200">GENERAL</span>
-            </div>
-            <h2 class="text-2xl font-bold mb-2 text-white">Ward 病房模式</h2>
-            <p class="text-sm text-slate-400 group-hover:text-emerald-100 leading-relaxed">
-                針對一般病房設計。強化跌倒風險、陪伴狀態與環境因子評估。
-            </p>
-        </a>
-    </div>
+        function handleLogin(e) {
+            e.preventDefault(); // 防止表單直接送出
 
-    <footer class="absolute bottom-6 text-slate-600 text-xs">
-        AIRDSS System v1.0 | 2026 Build
-    </footer>
+            const user = document.getElementById('username').value;
+            const pass = document.getElementById('password').value;
+            const errorDiv = document.getElementById('error-msg');
 
+            // 模擬驗證邏輯
+            if (user === 'admin' && pass === '1234') {
+                // 1. 儲存登入狀態
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('user', user);
+
+                // 2. 顯示成功動畫 (按鈕變綠)
+                const btn = document.querySelector('button[type="submit"]');
+                btn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                btn.classList.add('bg-green-600', 'hover:bg-green-700');
+                btn.innerHTML = `驗證成功，跳轉中...`;
+
+                // 3. 跳轉頁面
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 800);
+            } else {
+                // 顯示錯誤
+                errorDiv.classList.remove('hidden');
+                // 簡單的搖晃動畫
+                const card = document.querySelector('.bg-white');
+                card.classList.add('animate-pulse');
+                setTimeout(() => card.classList.remove('animate-pulse'), 500);
+            }
+        }
+    </script>
 </body>
 </html>
