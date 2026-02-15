@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AIRDSS ICU Risk Dashboard</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+    <link rel="icon" href="AIRDSS.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -75,8 +75,8 @@
                 
                 <div class="lg:col-span-9 flex flex-col gap-6 h-full overflow-y-auto pr-2 modal-scroll pb-10">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 shrink-0">
-                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border-l-4 border-blue-500 relative transition-colors" id="trs-card">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 shrink-0">
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border-l-4 border-emerald-500 relative transition-colors" id="trs-card">
                             <h2 class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">TRS 總風險分數</h2>
                             <div class="flex justify-between items-end mb-2">
                                 <div>
@@ -92,20 +92,34 @@
                             <div class="flex justify-between text-[10px] text-slate-400 mb-2">
                                 <span>ARS (60%)</span><span>CRS (40%)</span>
                             </div>
+                            <div class="bg-slate-50 dark:bg-slate-700/50 p-2 rounded border border-slate-100 dark:border-slate-600">
+                                <p class="text-[10px] font-bold text-slate-500 dark:text-slate-400">建議處置行動：</p>
+                                <p id="action-text" class="text-xs font-medium text-slate-700 dark:text-slate-200 leading-tight">載入中...</p>
+                            </div>
                         </div>
 
-                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-6 border dark:border-slate-700 transition-colors" id="patient-status-card">
-                            <h3 class="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">目前病患狀態</h3>
-                            <div id="patient-status-content" class="space-y-3">
-                                <div class="text-base font-semibold text-slate-700 dark:text-slate-200 leading-relaxed">
-                                    <span class="text-slate-500 dark:text-slate-400">目前病患狀態為：</span>
-                                    <span id="patient-status-text" class="text-slate-800 dark:text-white">載入中...</span>
-                                </div>
-                                <div class="pt-3 border-t border-slate-200 dark:border-slate-700">
-                                    <div class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-2">建議處置項目：</div>
-                                    <div id="patient-action-text" class="text-sm text-slate-700 dark:text-slate-200 leading-relaxed">載入中...</div>
-                                </div>
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border dark:border-slate-700 flex flex-col justify-between transition-colors">
+                            <div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">CRS 臨床評估</div>
+                                <div class="text-3xl font-black text-indigo-600 dark:text-indigo-400" id="card-crs">--</div>
                             </div>
+                            <div class="text-[10px] text-slate-400 mt-2">RASS / CAM-ICU / APACHE<br>Tube Risks / GCS</div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border dark:border-slate-700 flex flex-col justify-between transition-colors">
+                            <div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">ARS 感測指標</div>
+                                <div class="text-3xl font-black text-blue-600 dark:text-blue-400" id="card-ars">--</div>
+                            </div>
+                            <div class="text-[10px] text-slate-400 mt-2">Pull Freq / Max Force<br>Vital Signs Trend</div>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-sm p-5 border dark:border-slate-700 flex flex-col justify-between transition-colors">
+                            <div>
+                                <div class="text-xs text-slate-500 dark:text-slate-400 mb-1">目前狀態</div>
+                                <div class="text-xl font-bold text-slate-700 dark:text-white" id="card-status">--</div>
+                            </div>
+                            <div class="text-xs text-slate-400" id="card-duration">持續: --</div>
                         </div>
                     </div>
 
@@ -332,61 +346,6 @@
         const urlParams = new URLSearchParams(window.location.search);
         const bedNum = urlParams.get('bed');
         const rassMap = { "-2": "-2 (輕度)", "-1": "-1 (昏睡)", "0": "0 (平靜)", "1": "+1 (焦慮)", "2": "+2 (躁動)" };
-        
-        // 警示定義映射表（與 index.html 一致）
-        const alertDefinitions = {
-            'hypoxemia': { condition: '持續低血氧: SpO2 < 88% 且持續 ≥ 2 分鐘', uiText: '生理危急, 持續嚴重低血氧', action: '立即床邊評估、給氧與通報', severity: 'critical', priority: 1 },
-            'hypotension': { condition: '持續低血壓 (MAP/BP): MAP < 65 或收縮壓 (SBP) 波動 ≥ 20%', uiText: '生理危急, 持續嚴重低血壓', action: '立即床邊評估與通報', severity: 'critical', priority: 1 },
-            'tachycardia': { condition: '持續心搏過速: HR > 140 且持續 ≥ 5 分鐘', uiText: '生理危急: 持續心搏過速', action: '立即床邊評估與通報', severity: 'critical', priority: 1 },
-            'high_struggle': { condition: '高強度掙脫: 同時出現高頻拉扯與高拉力', uiText: '行為危急: 高強度掙脫行為', action: '立即床邊查看約束裝置', severity: 'critical', priority: 1 },
-            'high_risk': { condition: '高風險 (TRS ≥ 0.60)', uiText: '高風險: 建議立即介入處置', action: '立即床邊評估、預防管路滑脫、通報', severity: 'high', priority: 2 },
-            'medium_risk': { condition: '中風險 (0.30 ≤ TRS < 0.60)', uiText: '中風險: 建議加強觀察並排除相關因素', action: '提高床邊巡視、評估與藥物調整、通報', severity: 'medium', priority: 3 },
-            'low_risk': { condition: '低風險 (TRS < 0.30)', uiText: '低風險: 維持常規照護', action: '例行監測', severity: 'low', priority: 4 },
-            'restraint_check_30_icu': { condition: '約束查核時間30分鐘(重症)', uiText: '約束查核時間', action: '檢查約束裝置及評估', severity: 'info', priority: 5 },
-            'assessment_missing': { condition: '評估缺失', uiText: 'CRS 無效, 自動監測 ARS', action: '檢視評估項目', severity: 'warning', priority: 3 },
-            'device_detached': { condition: '裝置脫落', uiText: '未感應到裝置', action: '立即床邊評估與檢視裝置', severity: 'critical', priority: 1 },
-            'low_battery': { condition: '電量', uiText: '裝置電量不足', action: '請更換裝置', severity: 'warning', priority: 3 },
-            'rass_change': { condition: 'RASS變化', uiText: 'RASS ≥ +2', action: '床邊評估與調整鎮靜藥物', severity: 'warning', priority: 3 },
-            'pain_score': { condition: 'NRS/CPOT分數', uiText: 'NRS/CPOT分數大於4', action: '床邊評估與給予止痛藥物', severity: 'warning', priority: 3 }
-        };
-        
-        // 獲取主要警示（根據 TRS 和當前狀態）
-        function getPatientStatusAlert(trs, crsData, arsData, record) {
-            const alerts = [];
-            
-            // 根據 TRS 判斷風險等級
-            if (trs >= 0.60) {
-                alerts.push({ type: 'high_risk', ...alertDefinitions.high_risk });
-            } else if (trs >= 0.30) {
-                alerts.push({ type: 'medium_risk', ...alertDefinitions.medium_risk });
-            } else {
-                alerts.push({ type: 'low_risk', ...alertDefinitions.low_risk });
-            }
-            
-            // 檢測 RASS 變化
-            if (crsData && crsData.rass && parseInt(crsData.rass) >= 2) {
-                alerts.push({ type: 'rass_change', ...alertDefinitions.rass_change });
-            }
-            
-            // 檢測疼痛分數
-            if (crsData && crsData.pain && parseInt(crsData.pain) >= 2) {
-                alerts.push({ type: 'pain_score', ...alertDefinitions.pain_score });
-            }
-            
-            // 檢測高強度掙脫（與 index.html 中的 detectBedAlerts 邏輯一致）
-            // 條件：10秒2次（即 0.2次/秒）與 0.5kg 的拉力
-            if (arsData) {
-                const pullFreq = parseFloat(arsData.pullFreq) || 0;
-                const maxForce = parseFloat(arsData.maxForce) || 0;
-                if (pullFreq >= 0.2 && maxForce >= 0.5) {
-                    alerts.push({ type: 'high_struggle', ...alertDefinitions.high_struggle });
-                }
-            }
-            
-            // 按優先級排序
-            alerts.sort((a, b) => a.priority - b.priority);
-            return alerts.length > 0 ? alerts[0] : null;
-        }
 
         document.addEventListener("DOMContentLoaded", () => {
             if (!bedNum) {
@@ -438,7 +397,14 @@
                 document.getElementById('input-tube-exposed').checked = (record.crs.tubeExposed == 1);
             }
 
-            // Status Update (已移除，現在使用新的病患狀態顯示)
+            // Status Update
+            const statusMap = { 1: '臥床休息', 2: '約束中', 3: '⚠️ 高風險', 4: '待解除' };
+            document.getElementById('card-status').innerText = statusMap[record.status] || '監測中';
+            if(record.restraint_start) {
+                const diff = Math.floor((new Date() - new Date(record.restraint_start)) / 60000);
+                const hrs = Math.floor(diff/60);
+                document.getElementById('card-duration').innerText = `持續: ${hrs}小時 ${diff%60}分`;
+            }
 
             // 2. 載入 ARS 資料（如果有的話）
             if (record.ars) {
@@ -466,9 +432,7 @@
             // Header Time
             document.getElementById('header-time').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
 
-            // 更新電池電量（從 record.voltage 讀取，如果沒有則預設為 100%）
-            const batteryLevel = record.voltage !== undefined ? record.voltage : 100;
-            updateBatteryStatus(batteryLevel);
+            updateBatteryStatus(15)
         }
 
         function updateCalc() {
@@ -493,7 +457,7 @@
             let rawArs = pbs + pts; // 0-10
             let normArs = rawArs / 10;
             document.getElementById('ars-total').innerText = `${rawArs} / 10分`;
-            // card-ars 元素已移除，不再更新
+            document.getElementById('card-ars').innerText = rawArs;
 
             // CRS Logic
             let score = 0;
@@ -512,7 +476,7 @@
 
             if(score > 14) score = 14;
             let normCrs = score / 14;
-            // card-crs 元素已移除，不再更新
+            document.getElementById('card-crs').innerText = score;
             document.getElementById('crs-total').innerText = `${score} / 14分`;
 
             // TRS Logic
@@ -526,38 +490,21 @@
             // Badge & Action
             const badge = document.getElementById('risk-badge');
             const card = document.getElementById('trs-card');
+            const action = document.getElementById('action-text');
             const override = !document.getElementById('override-alert').classList.contains('hidden');
-
-            // 獲取當前記錄數據
-            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
-            const record = allBeds.find(b => b.bed_number === bedNum);
-            const crsData = record?.crs || {};
-            const arsData = record?.ars || {};
-            
-            // 獲取主要警示
-            const primaryAlert = getPatientStatusAlert(trs, crsData, arsData, record);
-            
-            // 更新病患狀態顯示
-            const statusTextEl = document.getElementById('patient-status-text');
-            const actionTextEl = document.getElementById('patient-action-text');
-            
-            if (primaryAlert) {
-                statusTextEl.innerText = primaryAlert.uiText;
-                actionTextEl.innerText = primaryAlert.action;
-            } else {
-                statusTextEl.innerText = '低風險: 維持常規照護';
-                actionTextEl.innerText = '例行監測';
-            }
 
             if(override || trs >= 0.7) {
                 badge.innerText = "HIGH"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300";
                 card.classList.remove('border-emerald-500', 'border-orange-500'); card.classList.add('border-red-500');
+                action.innerText = "立即床邊評估、保護管路、通報醫師";
             } else if (trs >= 0.3) {
                 badge.innerText = "MEDIUM"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300";
                 card.classList.remove('border-emerald-500', 'border-red-500'); card.classList.add('border-orange-500');
+                action.innerText = "提高觀察、優先處理缺氧/疼痛";
             } else {
                 badge.innerText = "LOW"; badge.className = "px-2 py-1 rounded text-xs font-bold bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300";
                 card.classList.remove('border-red-500', 'border-orange-500'); card.classList.add('border-emerald-500');
+                action.innerText = "例行監測、舒適度與固定檢查";
             }
             renderChart((trs * 10).toFixed(1), rawArs, score);
             

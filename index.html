@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>智慧約束監控系統 (Smart Restraint Monitoring)</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏥</text></svg>">
+    <link rel="icon" href="AIRDSS.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -91,7 +91,7 @@
         }
     </style>
     <script>
-        if (!localStorage.getItem('isLoggedIn')) { window.location.href = 'login.html'; }
+        if (!localStorage.getItem('isLoggedIn')) { window.location.href = 'main.html'; }
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
@@ -213,11 +213,6 @@
                     </div>
 
                     <div class="flex items-center gap-3">
-                        <div class="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg px-3 py-1.5">
-                            <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
-                            <input type="text" id="rec-search" onkeyup="handleRecordSearch()" placeholder="搜尋床號或病歷號..." 
-                                class="bg-transparent border-none focus:ring-0 text-sm px-2 py-1 outline-none text-slate-700 dark:text-slate-200 w-40">
-                        </div>
                         <div id="rec-history-filters" class="hidden flex items-center gap-2">
                             <label class="text-xs text-slate-500 dark:text-slate-400">日期篩選:</label>
                             <input type="date" id="rec-filter-date" onchange="renderHistoryRecords()" class="border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-blue-500 dark:text-white">
@@ -679,120 +674,6 @@
             5: { text: '待解除 (Action)', class: 'card-status-4 bg-white dark:bg-slate-800', textCol: 'text-blue-700 dark:text-blue-400' }
         };
 
-        // 警示定義映射表
-        const alertDefinitions = {
-            // 生理危急
-            'hypoxemia': {
-                condition: '持續低血氧: SpO2 < 88% 且持續 ≥ 2 分鐘',
-                uiText: '生理危急, 持續嚴重低血氧',
-                action: '立即床邊評估、給氧與通報',
-                severity: 'critical',
-                priority: 1
-            },
-            'hypotension': {
-                condition: '持續低血壓 (MAP/BP): MAP < 65 或收縮壓 (SBP) 波動 ≥ 20%',
-                uiText: '生理危急, 持續嚴重低血壓',
-                action: '立即床邊評估與通報',
-                severity: 'critical',
-                priority: 1
-            },
-            'tachycardia': {
-                condition: '持續心搏過速: HR > 140 且持續 ≥ 5 分鐘',
-                uiText: '生理危急: 持續心搏過速',
-                action: '立即床邊評估與通報',
-                severity: 'critical',
-                priority: 1
-            },
-            // 行為危急
-            'high_struggle': {
-                condition: '高強度掙脫: 同時出現高頻拉扯與高拉力',
-                uiText: '行為危急: 高強度掙脫行為',
-                action: '立即床邊查看約束裝置',
-                severity: 'critical',
-                priority: 1
-            },
-            // 風險等級
-            'high_risk': {
-                condition: '高風險 (TRS ≥ 0.60)',
-                uiText: '高風險: 建議立即介入處置',
-                action: '立即床邊評估、預防管路滑脫、通報',
-                severity: 'high',
-                priority: 2
-            },
-            'medium_risk': {
-                condition: '中風險 (0.30 ≤ TRS < 0.60)',
-                uiText: '中風險: 建議加強觀察並排除相關因素',
-                action: '提高床邊巡視、評估與藥物調整、通報',
-                severity: 'medium',
-                priority: 3
-            },
-            'low_risk': {
-                condition: '低風險 (TRS < 0.30)',
-                uiText: '低風險: 維持常規照護',
-                action: '例行監測',
-                severity: 'low',
-                priority: 4
-            },
-            // 約束查核時間
-            'restraint_check_30_icu': {
-                condition: '約束查核時間30分鐘(重症)',
-                uiText: '約束查核時間',
-                action: '檢查約束裝置及評估',
-                severity: 'info',
-                priority: 5
-            },
-            'restraint_check_30_ward_family': {
-                condition: '約束查核時間30分鐘(病房/有家屬)',
-                uiText: '約束查核時間',
-                action: '檢查約束裝置及評估',
-                severity: 'info',
-                priority: 5
-            },
-            'restraint_check_60_ward_no_family': {
-                condition: '約束查核時間60分鐘(病房/無家屬)',
-                uiText: '約束查核時間',
-                action: '檢查約束裝置及評估',
-                severity: 'info',
-                priority: 5
-            },
-            // 其他警示
-            'assessment_missing': {
-                condition: '評估缺失',
-                uiText: 'CRS 無效, 自動監測 ARS',
-                action: '檢視評估項目',
-                severity: 'warning',
-                priority: 3
-            },
-            'device_detached': {
-                condition: '裝置脫落',
-                uiText: '未感應到裝置',
-                action: '立即床邊評估與檢視裝置',
-                severity: 'critical',
-                priority: 1
-            },
-            'low_battery': {
-                condition: '電量',
-                uiText: '裝置電量不足',
-                action: '請更換裝置',
-                severity: 'warning',
-                priority: 3
-            },
-            'rass_change': {
-                condition: 'RASS變化',
-                uiText: 'RASS ≥ +2',
-                action: '床邊評估與調整鎮靜藥物',
-                severity: 'warning',
-                priority: 3
-            },
-            'pain_score': {
-                condition: 'NRS/CPOT分數',
-                uiText: 'NRS/CPOT分數大於4',
-                action: '床邊評估與給予止痛藥物',
-                severity: 'warning',
-                priority: 3
-            }
-        };
-
         const rassMap = {
             "-2": "-2 (輕度鎮靜)",
             "-1": "-1 (昏昏欲睡)",
@@ -821,200 +702,6 @@
         let alertSoundContext = null; // AudioContext 用於生成警示音
         let activeAlerts = new Set(); // 追蹤有未處理異常的床位
         let alertInterval = null; // 持續播放警示音的定時器
-
-        // 檢測床位的警示條件
-        function detectBedAlerts(bed) {
-            const alerts = [];
-            const now = new Date();
-            
-            // 如果床位狀態為 3（高風險），確保至少有一個高風險警示
-            const isHighRiskStatus = bed.status === 3;
-            
-            // 獲取或初始化生理數據（模擬數據）
-            if (!bed.vitals) {
-                bed.vitals = {
-                    spo2: 95 + Math.random() * 5, // 90-100
-                    map: 70 + Math.random() * 20, // 70-90
-                    sbp: 120 + Math.random() * 20, // 120-140
-                    hr: 80 + Math.random() * 40, // 80-120
-                    lastUpdate: now.toISOString()
-                };
-            }
-            
-            // 計算 TRS
-            const trs = calculateTRS(bed.crs || {}, bed.type, bed.ars || {});
-            
-            // 1. 檢測持續低血氧 (SpO2 < 88% 且持續 ≥ 2 分鐘)
-            if (bed.vitals.spo2 < 88) {
-                const alertStart = bed.vitals.hypoxemiaStart || now;
-                if (!bed.vitals.hypoxemiaStart) {
-                    bed.vitals.hypoxemiaStart = alertStart.toISOString();
-                }
-                const duration = (now - new Date(bed.vitals.hypoxemiaStart)) / 1000 / 60; // 分鐘
-                if (duration >= 2) {
-                    alerts.push({
-                        type: 'hypoxemia',
-                        ...alertDefinitions.hypoxemia
-                    });
-                }
-            } else {
-                bed.vitals.hypoxemiaStart = null;
-            }
-            
-            // 2. 檢測持續低血壓 (MAP < 65 或 SBP 波動 ≥ 20%)
-            if (bed.vitals.map < 65) {
-                const alertStart = bed.vitals.hypotensionStart || now;
-                if (!bed.vitals.hypotensionStart) {
-                    bed.vitals.hypotensionStart = alertStart.toISOString();
-                }
-                const duration = (now - new Date(bed.vitals.hypotensionStart)) / 1000 / 60;
-                if (duration >= 2) {
-                    alerts.push({
-                        type: 'hypotension',
-                        ...alertDefinitions.hypotension
-                    });
-                }
-            } else {
-                bed.vitals.hypotensionStart = null;
-            }
-            
-            // 3. 檢測持續心搏過速 (HR > 140 且持續 ≥ 5 分鐘)
-            if (bed.vitals.hr > 140) {
-                const alertStart = bed.vitals.tachycardiaStart || now;
-                if (!bed.vitals.tachycardiaStart) {
-                    bed.vitals.tachycardiaStart = alertStart.toISOString();
-                }
-                const duration = (now - new Date(bed.vitals.tachycardiaStart)) / 1000 / 60;
-                if (duration >= 5) {
-                    alerts.push({
-                        type: 'tachycardia',
-                        ...alertDefinitions.tachycardia
-                    });
-                }
-            } else {
-                bed.vitals.tachycardiaStart = null;
-            }
-            
-            // 4. 檢測高強度掙脫（同時出現高頻拉扯與高拉力）
-            // 條件：10秒2次（即 0.2次/秒）與 0.5kg 的拉力
-            const ars = bed.ars || {};
-            const pullFreq = parseFloat(ars.pullFreq) || 0;
-            const maxForce = parseFloat(ars.maxForce) || 0;
-            // 10秒2次 = 0.2次/秒，但我們使用 > 0.2 來檢測高頻拉扯
-            // 0.5kg 的拉力
-            if (pullFreq >= 0.2 && maxForce >= 0.5) {
-                alerts.push({
-                    type: 'high_struggle',
-                    ...alertDefinitions.high_struggle
-                });
-            }
-            
-            // 5. 檢測風險等級
-            if (trs >= 0.60) {
-                alerts.push({
-                    type: 'high_risk',
-                    ...alertDefinitions.high_risk
-                });
-            } else if (trs >= 0.30) {
-                alerts.push({
-                    type: 'medium_risk',
-                    ...alertDefinitions.medium_risk
-                });
-            } else {
-                alerts.push({
-                    type: 'low_risk',
-                    ...alertDefinitions.low_risk
-                });
-            }
-            
-            // 6. 檢測約束查核時間
-            if (bed.restraint && bed.restraint.start_time) {
-                const startTime = new Date(bed.restraint.start_time);
-                const duration = (now - startTime) / 1000 / 60; // 分鐘
-                
-                if (bed.type === 'ICU') {
-                    // 重症：30分鐘
-                    if (duration >= 30 && (duration % 30) < 1) {
-                        alerts.push({
-                            type: 'restraint_check_30_icu',
-                            ...alertDefinitions.restraint_check_30_icu
-                        });
-                    }
-                } else {
-                    // 一般病房：有家屬30分鐘，無家屬60分鐘
-                    const hasFamily = bed.restraint.has_family || false;
-                    const checkInterval = hasFamily ? 30 : 60;
-                    if (duration >= checkInterval && (duration % checkInterval) < 1) {
-                        alerts.push({
-                            type: hasFamily ? 'restraint_check_30_ward_family' : 'restraint_check_60_ward_no_family',
-                            ...alertDefinitions[hasFamily ? 'restraint_check_30_ward_family' : 'restraint_check_60_ward_no_family']
-                        });
-                    }
-                }
-            }
-            
-            // 7. 檢測評估缺失（CRS 無效）
-            if (!bed.crs || Object.keys(bed.crs).length === 0) {
-                alerts.push({
-                    type: 'assessment_missing',
-                    ...alertDefinitions.assessment_missing
-                });
-            }
-            
-            // 8. 檢測裝置脫落（模擬：電池為0或連線狀態為false）
-            // 使用 voltage 欄位（測試資料使用 voltage）
-            if ((bed.voltage !== undefined && bed.voltage === 0) || bed.offline === true) {
-                alerts.push({
-                    type: 'device_detached',
-                    ...alertDefinitions.device_detached
-                });
-            }
-            
-            // 9. 檢測電量不足
-            // 使用 voltage 欄位（測試資料使用 voltage），低於20%視為電量不足
-            if (bed.voltage !== undefined && bed.voltage < 20 && bed.voltage > 0) {
-                alerts.push({
-                    type: 'low_battery',
-                    ...alertDefinitions.low_battery
-                });
-            }
-            
-            // 10. 檢測 RASS 變化（RASS ≥ +2）
-            if (bed.crs && bed.crs.rass && parseInt(bed.crs.rass) >= 2) {
-                alerts.push({
-                    type: 'rass_change',
-                    ...alertDefinitions.rass_change
-                });
-            }
-            
-            // 11. 檢測 NRS/CPOT 分數（疼痛分數 > 4）
-            if (bed.crs && bed.crs.pain && parseInt(bed.crs.pain) >= 2) {
-                // 假設 pain 分數 2 對應 NRS/CPOT > 4
-                alerts.push({
-                    type: 'pain_score',
-                    ...alertDefinitions.pain_score
-                });
-            }
-            
-            // 如果床位狀態為 3（高風險）但沒有檢測到任何警示，強制添加高風險警示
-            if (isHighRiskStatus && alerts.length === 0) {
-                alerts.push({
-                    type: 'high_risk',
-                    ...alertDefinitions.high_risk
-                });
-            }
-            
-            // 按優先級排序（priority 越小越優先）
-            alerts.sort((a, b) => a.priority - b.priority);
-            
-            return alerts;
-        }
-        
-        // 獲取主要警示（最高優先級）
-        function getPrimaryAlert(alerts) {
-            if (alerts.length === 0) return null;
-            return alerts[0];
-        }
 
         // 計算 TRS (總風險分數) 的輔助函數
         function calculateTRS(crsData, unitType, arsData = null) {
@@ -1454,18 +1141,11 @@
                 if (!alertSoundContext) {
                     alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
                 if (alertSoundContext.state === 'suspended') {
-                    alertSoundContext.resume().then(() => {
-                        // resume 成功
-                    }).catch((error) => {
-                        // resume 失敗，靜默處理（不顯示錯誤）
-                        console.debug('AudioContext resume failed:', error);
-                    });
+                    alertSoundContext.resume().catch(() => {});
                 }
             } catch (error) {
-                // 初始化失敗，靜默處理（不顯示錯誤）
-                console.debug('AudioContext initialization failed:', error);
+                // 靜默處理
             }
             
             customConfirm("這將會清除目前的資料並產生測試數據，確定嗎？").then(result => {
@@ -1524,54 +1204,40 @@
         }
         
         // 輔助函數：根據風險等級生成 ARS 資料
-        function generateARSData(riskLevel, customValues = {}) {
+        function generateARSData(riskLevel) {
             // riskLevel: 'low', 'medium', 'high'
-            // customValues 可以包含：hr, rr, spo2, sbp, pbs, pullFreq, maxForce
-            let baseData;
             if (riskLevel === 'high') {
-                baseData = {
+                return {
                     hr: 2,      // > 120 bpm
                     rr: 2,      // > 30 /min
                     spo2: 2,    // < 90%
                     sbp: 2,     // > 160 mmHg
-                    pbs: 2,     // 高頻拉扯 + 高拉力
-                    pullFreq: 0.3,  // 拉扯頻率（次/秒）
-                    maxForce: 1.5   // 最大拉力（kg）
+                    pbs: 2      // 高頻拉扯 + 高拉力
                 };
             } else if (riskLevel === 'medium') {
-                baseData = {
+                return {
                     hr: 1,      // 101-120 bpm
                     rr: 1,      // 21-30 /min
                     spo2: 1,    // 90-93%
                     sbp: 1,     // 120-160 mmHg
-                    pbs: 1,     // 高頻拉扯 或 高拉力
-                    pullFreq: 0.15, // 拉扯頻率（次/秒）
-                    maxForce: 0.8   // 最大拉力（kg）
+                    pbs: 1      // 高頻拉扯 或 高拉力
                 };
             } else {
-                baseData = {
+                return {
                     hr: 0,      // 60-100 bpm
                     rr: 0,      // < 20 /min
                     spo2: 0,    // > 94%
                     sbp: 0,     // < 120 mmHg
-                    pbs: 0,     // 正常
-                    pullFreq: 0.1,  // 拉扯頻率（次/秒）
-                    maxForce: 0.3   // 最大拉力（kg）
+                    pbs: 0      // 正常
                 };
             }
-            // 用自定義值覆蓋
-            return { ...baseData, ...customValues };
         }
         
         // 輔助函數：根據單位類型和風險等級生成 CRS 資料
-        function generateCRSData(unitType, riskLevel, customValues = {}) {
-            // customValues 可以包含：rass, pain, cam, gcs, apache, mod, tube, tubeExposed (ICU)
-            // 或 fall, support, gcs, pain, hx, tube, tubeExposed (Ward)
-            
+        function generateCRSData(unitType, riskLevel) {
             if (unitType === 'ICU') {
-                let baseData;
                 if (riskLevel === 'high') {
-                    baseData = {
+                    return {
                         rass: 2,        // +2 躁動
                         cam: 3,         // 6-7 重度
                         gcs: 2,         // 9-12
@@ -1582,7 +1248,7 @@
                         tubeExposed: 1  // 管路暴露
                     };
                 } else if (riskLevel === 'medium') {
-                    baseData = {
+                    return {
                         rass: 1,        // +1 焦慮
                         cam: 2,         // 4-5 中度
                         gcs: 1,         // 13-14
@@ -1593,7 +1259,7 @@
                         tubeExposed: 0
                     };
                 } else {
-                    baseData = {
+                    return {
                         rass: 0,        // 0 平靜
                         cam: 0,         // 0-1 陰性
                         gcs: 0,         // <8 或 15
@@ -1604,12 +1270,9 @@
                         tubeExposed: 0
                     };
                 }
-                // 用自定義值覆蓋
-                return { ...baseData, ...customValues };
             } else { // Ward
-                let baseData;
                 if (riskLevel === 'high') {
-                    baseData = {
+                    return {
                         fall: 3,        // 高跌倒風險
                         support: 1,     // 無陪伴
                         gcs: 2,         // 9-12
@@ -1619,7 +1282,7 @@
                         tubeExposed: 1  // 管路暴露
                     };
                 } else if (riskLevel === 'medium') {
-                    baseData = {
+                    return {
                         fall: 2,        // 中跌倒風險
                         support: 0,     // 有陪伴
                         gcs: 1,         // 13-14
@@ -1629,7 +1292,7 @@
                         tubeExposed: 0
                     };
                 } else {
-                    baseData = {
+                    return {
                         fall: 0,        // 低跌倒風險
                         support: 0,      // 有陪伴
                         gcs: 0,         // <8 或 15
@@ -1639,8 +1302,6 @@
                         tubeExposed: 0
                     };
                 }
-                // 用自定義值覆蓋
-                return { ...baseData, ...customValues };
             }
         }
         
@@ -1721,12 +1382,6 @@
         }
 
         async function generateMockDataInternal() {
-            // 生成隨機病歷號的輔助函數
-            function generateMedicalRecordId() {
-                // 生成 M + 7位隨機數字
-                const randomNum = Math.floor(1000000 + Math.random() * 9000000);
-                return `M${randomNum}`;
-            }
 
             const now = new Date();
             const tenMinsAgo = new Date(now.getTime() - 10 * 60 * 1000).toISOString(); // 10分鐘前
@@ -1735,10 +1390,6 @@
             const futureTime = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(); // 2小時後
             const pastTime = new Date(now.getTime() - 5 * 60 * 1000).toISOString(); // 5分鐘前 (過期)
             const threeDaysAgo = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString(); // 3天前（封存記錄）
-            const twoMinsAgo = new Date(now.getTime() - 2 * 60 * 1000).toISOString(); // 2分鐘前（用於持續低血氧/低血壓）
-            const fiveMinsAgo = new Date(now.getTime() - 5 * 60 * 1000).toISOString(); // 5分鐘前（用於持續心搏過速）
-            const thirtyMinsAgo = new Date(now.getTime() - 30 * 60 * 1000).toISOString(); // 30分鐘前（ICU約束查核）
-            const sixtyMinsAgo = new Date(now.getTime() - 60 * 60 * 1000).toISOString(); // 60分鐘前（Ward約束查核）
 
             // 生成完整的測試資料
             const mockData = [];
@@ -1753,7 +1404,6 @@
                 status: 1,
                     voltage: 95,
                     updated_at: new Date().toISOString(),
-                    medical_record_id: 'M8733711',
                 crs: crs1,
                 ars: ars1,
                     restraint: {},
@@ -1770,7 +1420,6 @@
                 status: 2,
                 voltage: 88,
                     updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                 restraint_start: tenMinsAgo,
                 restraint_end: futureTime,
                 crs: crs2,
@@ -1783,8 +1432,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'calm',
-                    start_time: tenMinsAgo
+                    response: 'calm'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Amy' }, 'low'),
                     recorder: 'Nurse_Amy'
@@ -1799,7 +1447,6 @@
                 status: 2,
                 voltage: 75,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: twoHoursAgo,
                 restraint_end: futureTime,
                 crs: crs3,
@@ -1813,8 +1460,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'restless',
-                    start_time: twoHoursAgo
+                    response: 'restless'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Lisa' }, 'medium'),
                 recorder: 'Nurse_Lisa'
@@ -1822,15 +1468,13 @@
             
             // 4. ICU-04: 高風險掙脫 - 高風險
             let crs4 = generateCRSData('ICU', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位測試高風險，但不是高強度掙脫）
-            let ars4 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
+            let ars4 = generateARSData('high');
             mockData.push({
                 bed_number: 'ICU-04',
                 type: 'ICU',
                 status: 3,
                 voltage: 82,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: oneHourAgo,
                 restraint_end: futureTime,
                 crs: crs4,
@@ -1845,8 +1489,7 @@
                     circ: '良好',
                     resp: '正常',
                     response: 'aggressive',
-                    measure: ['定時檢查', '皮膚護理'],
-                    start_time: oneHourAgo
+                    measure: ['定時檢查', '皮膚護理']
                 },
                 timeline: generateTimeline({ recorder: 'Dr_Wang' }, 'high'),
                 recorder: 'Dr_Wang'
@@ -1861,7 +1504,6 @@
                 status: 4,
                 voltage: 92,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 crs: crs5,
                 ars: ars5,
                 restraint: {
@@ -1887,7 +1529,6 @@
                 status: 5,
                 voltage: 85,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 crs: crs6,
                 ars: ars6,
                 restraint: {
@@ -1914,7 +1555,6 @@
                 status: 1,
                 voltage: 98,
                     updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                 crs: crs7,
                 ars: ars7,
                 restraint: {},
@@ -1931,7 +1571,6 @@
                     status: 2,
                 voltage: 96,
                     updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                 restraint_start: tenMinsAgo,
                 restraint_end: futureTime,
                 crs: crs8,
@@ -1944,8 +1583,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'calm',
-                    start_time: tenMinsAgo
+                    response: 'calm'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Joy' }, 'low'),
                 recorder: 'Nurse_Joy'
@@ -1960,7 +1598,6 @@
                 status: 2,
                 voltage: 78,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: twoHoursAgo,
                 restraint_end: futureTime,
                 crs: crs9,
@@ -1974,8 +1611,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'restless',
-                    start_time: twoHoursAgo
+                    response: 'restless'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Mary' }, 'medium'),
                 recorder: 'Nurse_Mary'
@@ -1983,15 +1619,13 @@
             
             // 10. W-04: 高風險掙脫 - 高風險
             let crs10 = generateCRSData('Ward', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位測試高風險，但不是高強度掙脫）
-            let ars10 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
+            let ars10 = generateARSData('high');
             mockData.push({
                 bed_number: 'W-04',
                 type: 'Ward',
                 status: 3,
                 voltage: 72,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: oneHourAgo,
                 restraint_end: futureTime,
                 crs: crs10,
@@ -2006,8 +1640,7 @@
                     circ: '良好',
                     resp: '正常',
                     response: 'aggressive',
-                    measure: ['定時檢查', '皮膚護理', '翻身'],
-                    start_time: oneHourAgo
+                    measure: ['定時檢查', '皮膚護理', '翻身']
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_John' }, 'high'),
                 recorder: 'Nurse_John'
@@ -2022,7 +1655,6 @@
                 status: 4,
                 voltage: 94,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 crs: crs11,
                 ars: ars11,
                 restraint: {
@@ -2048,7 +1680,6 @@
                 status: 5,
                 voltage: 87,
                 updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
                 crs: crs12,
                 ars: ars12,
                 restraint: {
@@ -2068,15 +1699,13 @@
             // ========== 特殊狀態場景 (5筆) ==========
             // 13. ICU-07: 低電量警告 - 高風險
             let crs13 = generateCRSData('ICU', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試低電量）
-            let ars13 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
+            let ars13 = generateARSData('high');
             mockData.push({
                 bed_number: 'ICU-07',
                     type: 'ICU',
                 status: 3,
                 voltage: 18, // 低電量
                 updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                 restraint_start: oneHourAgo,
                 restraint_end: futureTime,
                 crs: crs13,
@@ -2089,8 +1718,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
+                    response: 'aggressive'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Sarah' }, 'high'),
                 recorder: 'Nurse_Sarah'
@@ -2105,7 +1733,6 @@
                     status: 2,
                 voltage: 15, // 低電量
                 updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                 restraint_start: tenMinsAgo,
                 restraint_end: futureTime,
                 crs: crs14,
@@ -2118,8 +1745,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
+                    response: 'restless'
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_David' }, 'medium'),
                 recorder: 'Nurse_David'
@@ -2134,10 +1760,8 @@
                 status: 2,
                 voltage: 65,
                 updated_at: oneHourAgo, // 離線
-                    medical_record_id: generateMedicalRecordId(),
                 restraint_start: twoHoursAgo,
                 restraint_end: futureTime,
-                offline: true, // 標記為離線
                 crs: crs15,
                 ars: ars15,
                 restraint: {
@@ -2148,8 +1772,7 @@
                     color: '正常',
                     circ: '良好',
                     resp: '正常',
-                    response: 'restless',
-                    start_time: twoHoursAgo
+                    response: 'restless'
                 },
                 timeline: generateTimeline({ recorder: 'Dr_Lin' }, 'medium'),
                 recorder: 'Dr_Lin'
@@ -2157,15 +1780,13 @@
             
             // 16. W-08: 約束時間已過期 - 高風險
             let crs16 = generateCRSData('Ward', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試約束過期）
-            let ars16 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
+            let ars16 = generateARSData('high');
             mockData.push({
                 bed_number: 'W-08',
                     type: 'Ward',
                     status: 2,
                 voltage: 91,
                     updated_at: new Date().toISOString(),
-                    medical_record_id: generateMedicalRecordId(),
                     restraint_start: oneHourAgo,
                 restraint_end: pastTime, // 已過期
                 crs: crs16,
@@ -2180,39 +1801,174 @@
                     circ: '良好',
                     resp: '正常',
                     response: 'aggressive',
-                    measure: ['定時檢查'],
-                    start_time: oneHourAgo
+                    measure: ['定時檢查']
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Kate' }, 'high'),
                 recorder: 'Nurse_Kate'
             });
             
-            // 17. ICU-09: 約束時間已過期 - 中風險（注意：這個會被新的 ICU-09 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 17. ICU-09: 約束時間已過期 - 中風險
+            let crs17 = generateCRSData('ICU', 'medium');
+            let ars17 = generateARSData('medium');
+            mockData.push({
+                bed_number: 'ICU-09',
+                type: 'ICU',
+                status: 2,
+                voltage: 83,
+                updated_at: new Date().toISOString(),
+                restraint_start: twoHoursAgo,
+                restraint_end: pastTime, // 已過期
+                crs: crs17,
+                ars: ars17,
+                restraint: {
+                    purpose: ['prevent_tube'],
+                    method: ['wrist'],
+                    part_hand: '左手腕',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'restless'
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Peter' }, 'medium'),
+                recorder: 'Nurse_Peter'
+            });
             
             // ========== 完整資料場景 (4筆) ==========
-            // 18. ICU-10: 完整資料 - 高風險（已移除，與後續的 ICU-10: 持續低血壓重複）
+            // 18. ICU-10: 完整資料 - 高風險（展示所有功能）
+            let crs18 = generateCRSData('ICU', 'high');
+            let ars18 = generateARSData('high');
+            mockData.push({
+                bed_number: 'ICU-10',
+                type: 'ICU',
+                status: 3,
+                voltage: 79,
+                updated_at: new Date().toISOString(),
+                restraint_start: oneHourAgo,
+                restraint_end: futureTime,
+                crs: crs18,
+                ars: ars18,
+                restraint: {
+                    purpose: ['prevent_tube', 'prevent_fall', 'prevent_injury'],
+                    other: '其他原因：病人意識混亂',
+                    consent: true,
+                    companion: 'yes',
+                    method: ['wrist', 'ankle', 'chest'],
+                    part_hand: '雙手腕',
+                    part_foot: '雙腳踝',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'aggressive',
+                    measure: ['定時檢查', '皮膚護理', '翻身', '評估意識']
+                },
+                timeline: generateTimeline({ recorder: 'Dr_Wu' }, 'high'),
+                recorder: 'Dr_Wu'
+            });
             
-            // 19. W-09: 完整資料 - 中風險（注意：這個會被新的 W-09 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 19. W-09: 完整資料 - 中風險
+            let crs19 = generateCRSData('Ward', 'medium');
+            let ars19 = generateARSData('medium');
+            mockData.push({
+                bed_number: 'W-09',
+                    type: 'Ward',
+                status: 2,
+                voltage: 76,
+                    updated_at: new Date().toISOString(),
+                restraint_start: tenMinsAgo,
+                restraint_end: futureTime,
+                crs: crs19,
+                ars: ars19,
+                restraint: {
+                    purpose: ['prevent_fall', 'prevent_injury'],
+                    other: '家屬要求',
+                    consent: true,
+                    companion: 'no',
+                    method: ['wrist', 'ankle'],
+                    part_hand: '右手腕',
+                    part_foot: '左腳踝',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'restless',
+                    measure: ['定時檢查', '皮膚護理']
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Anna' }, 'medium'),
+                recorder: 'Nurse_Anna'
+            });
             
-            // 20. ICU-11: 完整資料 - 低風險（注意：這個會被新的 ICU-11 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 20. ICU-11: 完整資料 - 低風險
+            let crs20 = generateCRSData('ICU', 'low');
+            let ars20 = generateARSData('low');
+            mockData.push({
+                bed_number: 'ICU-11',
+                type: 'ICU',
+                status: 2,
+                voltage: 93,
+                updated_at: new Date().toISOString(),
+                restraint_start: tenMinsAgo,
+                restraint_end: futureTime,
+                crs: crs20,
+                ars: ars20,
+                restraint: {
+                    purpose: ['prevent_fall'],
+                    consent: true,
+                    companion: 'yes',
+                    method: ['wrist'],
+                    part_hand: '左手腕',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'calm',
+                    measure: ['定時檢查']
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Mike' }, 'low'),
+                recorder: 'Nurse_Mike'
+            });
             
-            // 21. W-10: 完整資料 - 低風險（注意：這個會被新的 W-10 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 21. W-10: 完整資料 - 低風險
+            let crs21 = generateCRSData('Ward', 'low');
+            let ars21 = generateARSData('low');
+            mockData.push({
+                bed_number: 'W-10',
+                type: 'Ward',
+                status: 2,
+                voltage: 97,
+                updated_at: new Date().toISOString(),
+                restraint_start: tenMinsAgo,
+                restraint_end: futureTime,
+                crs: crs21,
+                ars: ars21,
+                restraint: {
+                    purpose: ['prevent_fall'],
+                    consent: true,
+                    companion: 'yes',
+                    method: ['wrist'],
+                    part_hand: '右手腕',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'calm',
+                    measure: ['定時檢查']
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Sue' }, 'low'),
+                recorder: 'Nurse_Sue'
+            });
             
             // ========== 歷史記錄場景 (4筆封存記錄) ==========
             // 22. ICU-12: 封存記錄 - 高風險（3天前）
             let crs22 = generateCRSData('ICU', 'high');
             let ars22 = generateARSData('high');
             mockData.push({
-                bed_number: 'ICU-12-ARCHIVED',
+                bed_number: 'ICU-12',
                 type: 'ICU',
                 status: 'archived',
                 voltage: 0,
                 updated_at: threeDaysAgo,
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: new Date(new Date(threeDaysAgo).getTime() - 4 * 60 * 60 * 1000).toISOString(),
                 restraint_end: new Date(new Date(threeDaysAgo).getTime() - 2 * 60 * 60 * 1000).toISOString(),
                 crs: crs22,
@@ -2231,22 +1987,69 @@
                 recorder: 'Dr_Zhang'
             });
             
-            // 23. W-11: 封存記錄 - 中風險（3天前）（注意：這個會被新的 W-11 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 23. W-11: 封存記錄 - 中風險（3天前）
+            let crs23 = generateCRSData('Ward', 'medium');
+            let ars23 = generateARSData('medium');
+            mockData.push({
+                bed_number: 'W-11',
+                type: 'Ward',
+                status: 'archived',
+                voltage: 0,
+                updated_at: threeDaysAgo,
+                restraint_start: new Date(new Date(threeDaysAgo).getTime() - 5 * 60 * 60 * 1000).toISOString(),
+                restraint_end: new Date(new Date(threeDaysAgo).getTime() - 1 * 60 * 60 * 1000).toISOString(),
+                crs: crs23,
+                ars: ars23,
+                restraint: {
+                    purpose: ['prevent_fall'],
+                    method: ['wrist'],
+                    part_hand: '左手腕',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'restless'
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Lily' }, 'medium', 3),
+                recorder: 'Nurse_Lily'
+            });
             
-            // 24. ICU-13: 封存記錄 - 低風險（3天前）（注意：這個會被新的 ICU-13 覆蓋，需要重新編號）
-            // 這個床位會被新的警示情境測試資料覆蓋，所以移除或重新編號
+            // 24. ICU-13: 封存記錄 - 低風險（3天前）
+            let crs24 = generateCRSData('ICU', 'low');
+            let ars24 = generateARSData('low');
+            mockData.push({
+                bed_number: 'ICU-13',
+                type: 'ICU',
+                status: 'archived',
+                voltage: 0,
+                updated_at: threeDaysAgo,
+                restraint_start: new Date(new Date(threeDaysAgo).getTime() - 6 * 60 * 60 * 1000).toISOString(),
+                restraint_end: new Date(new Date(threeDaysAgo).getTime() - 2 * 60 * 60 * 1000).toISOString(),
+                crs: crs24,
+                ars: ars24,
+                restraint: {
+                    purpose: ['prevent_fall'],
+                    method: ['wrist'],
+                    part_hand: '右手腕',
+                    skin: '完整',
+                    color: '正常',
+                    circ: '良好',
+                    resp: '正常',
+                    response: 'calm'
+                },
+                timeline: generateTimeline({ recorder: 'Nurse_Bob' }, 'low', 3),
+                recorder: 'Nurse_Bob'
+            });
             
             // 25. W-12: 封存記錄 - 低風險（3天前）
             let crs25 = generateCRSData('Ward', 'low');
             let ars25 = generateARSData('low');
             mockData.push({
-                bed_number: 'W-12-ARCHIVED',
+                bed_number: 'W-12',
                 type: 'Ward',
                 status: 'archived',
                 voltage: 0,
                 updated_at: threeDaysAgo,
-                medical_record_id: generateMedicalRecordId(),
                 restraint_start: new Date(new Date(threeDaysAgo).getTime() - 7 * 60 * 60 * 1000).toISOString(),
                 restraint_end: new Date(new Date(threeDaysAgo).getTime() - 3 * 60 * 60 * 1000).toISOString(),
                 crs: crs25,
@@ -2263,486 +2066,6 @@
                 },
                 timeline: generateTimeline({ recorder: 'Nurse_Alice' }, 'low', 3),
                 recorder: 'Nurse_Alice'
-            });
-
-            // ========== 警示情境測試資料 ==========
-            
-            // ICU-09: 持續低血氧（SpO2 < 88%，持續2分鐘以上）
-            let crs26 = generateCRSData('ICU', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試低血氧）
-            let ars26 = generateARSData('high', { spo2: 2, pullFreq: 0.1, maxForce: 0.3 }); // 確保 spo2 分數為 2
-            mockData.push({
-                bed_number: 'ICU-09',
-                type: 'ICU',
-                status: 3, // 高風險狀態
-                voltage: 88,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs26,
-                ars: ars26,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
-                },
-                vitals: {
-                    spo2: 85, // < 88%
-                    map: 70,
-                    sbp: 120,
-                    hr: 90,
-                    hypoxemiaStart: twoMinsAgo, // 2分鐘前開始，滿足持續 ≥ 2 分鐘
-                    lastUpdate: new Date().toISOString()
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Wang' }, 'high'),
-                recorder: 'Dr_Wang'
-            });
-
-            // ICU-10: 持續低血壓（MAP < 65，持續2分鐘以上）
-            let crs27 = generateCRSData('ICU', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試低血壓）
-            let ars27 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
-            mockData.push({
-                bed_number: 'ICU-10',
-                type: 'ICU',
-                status: 3,
-                voltage: 92,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs27,
-                ars: ars27,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist', 'chest'],
-                    part_hand: '雙手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
-                },
-                vitals: {
-                    spo2: 95,
-                    map: 60, // < 65
-                    sbp: 100,
-                    hr: 100,
-                    hypotensionStart: twoMinsAgo, // 2分鐘前開始
-                    lastUpdate: new Date().toISOString()
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Chen' }, 'high'),
-                recorder: 'Dr_Chen'
-            });
-
-            // ICU-11: 持續心搏過速（HR > 140，持續5分鐘以上）
-            let crs28 = generateCRSData('ICU', 'high');
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試心搏過速）
-            let ars28 = generateARSData('high', { hr: 2, pullFreq: 0.1, maxForce: 0.3 }); // 確保 hr 分數為 2
-            mockData.push({
-                bed_number: 'ICU-11',
-                type: 'ICU',
-                status: 3,
-                voltage: 85,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs28,
-                ars: ars28,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: oneHourAgo
-                },
-                vitals: {
-                    spo2: 95,
-                    map: 75,
-                    sbp: 130,
-                    hr: 145, // > 140
-                    tachycardiaStart: fiveMinsAgo, // 5分鐘前開始，滿足持續 ≥ 5 分鐘
-                    lastUpdate: new Date().toISOString()
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Lin' }, 'high'),
-                recorder: 'Dr_Lin'
-            });
-
-            // ICU-12: 高強度掙脫（pullFreq >= 0.2, maxForce >= 0.5）
-            let crs29 = generateCRSData('ICU', 'high');
-            let ars29 = generateARSData('high', { 
-                pullFreq: 0.25, // 10秒2次 = 0.2次/秒，這裡設置為 0.25
-                maxForce: 0.8   // 0.5kg 以上
-            });
-            mockData.push({
-                bed_number: 'ICU-12',
-                type: 'ICU',
-                status: 3,
-                voltage: 90,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs29,
-                ars: ars29,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_Sarah' }, 'high'),
-                recorder: 'Nurse_Sarah'
-            });
-
-            // ICU-13: RASS ≥ +2（高風險狀態，RASS警示會被高風險警示覆蓋，但ICU-17有獨立測試）
-            let crs30 = generateCRSData('ICU', 'high', { rass: 3 }); // RASS = +3 (≥ +2)
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試 RASS）
-            let ars30 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
-            mockData.push({
-                bed_number: 'ICU-13',
-                type: 'ICU',
-                status: 3,
-                voltage: 87,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs30,
-                ars: ars30,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Wang' }, 'high'),
-                recorder: 'Dr_Wang'
-            });
-
-            // ICU-14: NRS/CPOT 分數大於4（高風險狀態，疼痛警示會被高風險警示覆蓋，但ICU-18有獨立測試）
-            let crs31 = generateCRSData('ICU', 'high', { pain: 2 }); // pain = 2 (對應 NRS/CPOT > 4)
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試疼痛分數）
-            let ars31 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
-            mockData.push({
-                bed_number: 'ICU-14',
-                type: 'ICU',
-                status: 3,
-                voltage: 89,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs31,
-                ars: ars31,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: oneHourAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Chen' }, 'high'),
-                recorder: 'Dr_Chen'
-            });
-
-            // ICU-15: 約束查核時間（30分鐘前開始）
-            let crs32 = generateCRSData('ICU', 'medium');
-            let ars32 = generateARSData('medium');
-            mockData.push({
-                bed_number: 'ICU-15',
-                type: 'ICU',
-                status: 2,
-                voltage: 91,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs32,
-                ars: ars32,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: thirtyMinsAgo // 30分鐘前開始，觸發約束查核時間
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_David' }, 'medium'),
-                recorder: 'Nurse_David'
-            });
-
-            // ICU-16: 評估缺失（無 CRS 資料）
-            // 設置較低的 pullFreq 和 maxForce，避免觸發高強度掙脫警示（此床位專門測試評估缺失）
-            let ars33 = generateARSData('high', { pullFreq: 0.1, maxForce: 0.3 });
-            mockData.push({
-                bed_number: 'ICU-16',
-                type: 'ICU',
-                status: 3,
-                voltage: 93,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: {}, // 空的 CRS，觸發評估缺失警示
-                ars: ars33,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: oneHourAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Lin' }, 'high'),
-                recorder: 'Dr_Lin'
-            });
-
-            // W-09: 持續低血氧（Ward）
-            let crs34 = generateCRSData('Ward', 'high');
-            let ars34 = generateARSData('high', { spo2: 2 });
-            mockData.push({
-                bed_number: 'W-09',
-                type: 'Ward',
-                status: 3,
-                voltage: 86,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs34,
-                ars: ars34,
-                restraint: {
-                    purpose: ['prevent_fall'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: oneHourAgo
-                },
-                vitals: {
-                    spo2: 86, // < 88%
-                    map: 72,
-                    sbp: 125,
-                    hr: 95,
-                    hypoxemiaStart: twoMinsAgo,
-                    lastUpdate: new Date().toISOString()
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_Alice' }, 'high'),
-                recorder: 'Nurse_Alice'
-            });
-
-            // W-10: 高強度掙脫（Ward）
-            let crs35 = generateCRSData('Ward', 'high');
-            let ars35 = generateARSData('high', { 
-                pullFreq: 0.3,  // 高頻拉扯
-                maxForce: 0.9   // 高拉力
-            });
-            mockData.push({
-                bed_number: 'W-10',
-                type: 'Ward',
-                status: 3,
-                voltage: 88,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs35,
-                ars: ars35,
-                restraint: {
-                    purpose: ['prevent_fall'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'aggressive',
-                    start_time: oneHourAgo
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_Bob' }, 'high'),
-                recorder: 'Nurse_Bob'
-            });
-
-            // W-11: 約束查核時間（60分鐘前開始，無家屬）
-            let crs36 = generateCRSData('Ward', 'medium');
-            let ars36 = generateARSData('medium');
-            mockData.push({
-                bed_number: 'W-11',
-                type: 'Ward',
-                status: 2,
-                voltage: 94,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs36,
-                ars: ars36,
-                restraint: {
-                    purpose: ['prevent_fall'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: sixtyMinsAgo, // 60分鐘前開始，無家屬
-                    has_family: false
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_Charlie' }, 'medium'),
-                recorder: 'Nurse_Charlie'
-            });
-
-            // ========== 獨立警示情境測試資料 ==========
-            
-            // ICU-17: RASS ≥ +2（獨立測試，低風險以避免被其他警示覆蓋）
-            let crs37 = generateCRSData('ICU', 'low', { rass: 2 }); // RASS = +2 (≥ +2)
-            let ars37 = generateARSData('low');
-            mockData.push({
-                bed_number: 'ICU-17',
-                type: 'ICU',
-                status: 2, // 約束中，非高風險狀態
-                voltage: 92,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs37,
-                ars: ars37,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Lee' }, 'low'),
-                recorder: 'Dr_Lee'
-            });
-
-            // ICU-18: NRS/CPOT 分數大於4（獨立測試，低風險以避免被其他警示覆蓋）
-            let crs38 = generateCRSData('ICU', 'low', { pain: 2 }); // pain = 2 (對應 NRS/CPOT > 4)
-            let ars38 = generateARSData('low');
-            mockData.push({
-                bed_number: 'ICU-18',
-                type: 'ICU',
-                status: 2, // 約束中，非高風險狀態
-                voltage: 91,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs38,
-                ars: ars38,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Chen' }, 'low'),
-                recorder: 'Dr_Chen'
-            });
-
-            // ICU-19: CRS無效，自動監測ARS
-            let ars39 = generateARSData('medium');
-            mockData.push({
-                bed_number: 'ICU-19',
-                type: 'ICU',
-                status: 2, // 約束中
-                voltage: 88,
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: {}, // 空的 CRS，觸發評估缺失警示
-                ars: ars39,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_Sarah' }, 'medium'),
-                recorder: 'Nurse_Sarah'
-            });
-
-            // ICU-20: 未感應到裝置
-            let crs40 = generateCRSData('ICU', 'medium');
-            let ars40 = generateARSData('medium');
-            mockData.push({
-                bed_number: 'ICU-20',
-                type: 'ICU',
-                status: 2, // 約束中
-                voltage: 0, // 電量為0，觸發裝置脫落警示
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                offline: true, // 標記為離線
-                crs: crs40,
-                ars: ars40,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '左手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
-                },
-                timeline: generateTimeline({ recorder: 'Dr_Wu' }, 'medium'),
-                recorder: 'Dr_Wu'
-            });
-
-            // ICU-21: 裝置電量不足
-            let crs41 = generateCRSData('ICU', 'medium');
-            let ars41 = generateARSData('medium');
-            mockData.push({
-                bed_number: 'ICU-21',
-                type: 'ICU',
-                status: 2, // 約束中
-                voltage: 15, // 低於20%，觸發電量不足警示
-                updated_at: new Date().toISOString(),
-                medical_record_id: generateMedicalRecordId(),
-                crs: crs41,
-                ars: ars41,
-                restraint: {
-                    purpose: ['prevent_tube'],
-                    method: ['wrist'],
-                    part_hand: '右手腕',
-                    skin: '完整',
-                    color: '正常',
-                    circ: '良好',
-                    resp: '正常',
-                    response: 'restless',
-                    start_time: tenMinsAgo
-                },
-                timeline: generateTimeline({ recorder: 'Nurse_David' }, 'medium'),
-                recorder: 'Nurse_David'
             });
 
             // 寫入 localStorage
@@ -2839,10 +2162,6 @@
                 const diffMinutes = (now - updateTime) / 1000 / 60;
                 let isOffline = diffMinutes > 3; // 超過3分鐘視為離線
                 
-                // 檢測警示條件
-                const bedAlerts = detectBedAlerts(bed);
-                const primaryAlert = getPrimaryAlert(bedAlerts);
-                
                 // C. "只看異常" 過濾
                 // 如果勾選了，只顯示：紅燈(3)、離線、低電量(<20%)、醫囑待解除(5)
                 if (filterRisk) {
@@ -2881,26 +2200,10 @@
 
                 // 情況 A: 紅燈警報 (Status 3) -> 顯示解除警報按鈕
                 if (bed.status === 3) {
-                    // 使用主要警示的 UI 文字和建議處置
-                    const alertStatusText = primaryAlert ? primaryAlert.uiText : '高風險掙脫';
-                    const alertActionText = primaryAlert ? primaryAlert.action : '請立即前往床邊評估';
-                    
-                    // 獲取具體數值用於顯示
-                    let vitalValueText = '';
-                    if (bed.vitals && primaryAlert) {
-                        if (primaryAlert.type === 'hypoxemia') {
-                            vitalValueText = ` (SpO₂: ${bed.vitals.spo2?.toFixed(0) || 'N/A'}%)`;
-                        } else if (primaryAlert.type === 'hypotension') {
-                            vitalValueText = ` (MAP: ${bed.vitals.map?.toFixed(0) || 'N/A'})`;
-                        } else if (primaryAlert.type === 'tachycardia') {
-                            vitalValueText = ` (HR: ${bed.vitals.hr?.toFixed(0) || 'N/A'})`;
-                        }
-                    }
-                    
                     durationHTML = `
                         <div class="mt-3 bg-red-600 text-white rounded p-2 text-center shadow-md animate-pulse">
-                            <div class="text-base font-bold">🚨 目前狀態：${alertStatusText}${vitalValueText}</div>
-                            <div class="text-sm opacity-90 mt-1">${alertActionText}</div>
+                            <div class="text-xs font-bold">🚨 目前狀態：高風險掙脫</div>
+                            <div class="text-[10px] opacity-90">請立即前往床邊評估</div>
                         </div>`;
                     
                     actionBtnHTML = `
@@ -2970,66 +2273,22 @@
 
                 // 顯示病床號和病歷號
                 const bedDisplayText = bed.medical_record_id 
-                    ? `${bed.bed_number} / ${bed.medical_record_id}`
+                    ? `${bed.bed_number}<br><span class="text-sm font-normal text-slate-500 dark:text-slate-400">${bed.medical_record_id}</span>`
                     : bed.bed_number;
-
-                // 決定狀態文字：如果有 primaryAlert，使用 primaryAlert.uiText，否則使用 config.text
-                // 這樣可以根據不同的警示類型顯示不同的文字，而不是固定的「掙脫風險 (Risk)」
-                let statusText = primaryAlert ? primaryAlert.uiText : config.text;
-                
-                // 根據 primaryAlert 的 severity 決定圖示和顏色
-                let statusIcon = '●';
-                let statusColorClass = config.textCol; // 預設使用 config 的顏色
-                
-                // 獲取具體的生理數據用於顯示
-                let vitalInfoHTML = '';
-                if (bed.vitals && primaryAlert) {
-                    if (primaryAlert.type === 'hypoxemia') {
-                        vitalInfoHTML = `<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">(SpO₂: ${bed.vitals.spo2?.toFixed(0) || 'N/A'}%)</span>`;
-                    } else if (primaryAlert.type === 'hypotension') {
-                        vitalInfoHTML = `<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">(MAP: ${bed.vitals.map?.toFixed(0) || 'N/A'})</span>`;
-                    } else if (primaryAlert.type === 'tachycardia') {
-                        vitalInfoHTML = `<span class="text-xs text-slate-500 dark:text-slate-400 ml-2">(HR: ${bed.vitals.hr?.toFixed(0) || 'N/A'})</span>`;
-                    }
-                }
-                
-                if (primaryAlert) {
-                    // 根據 severity 決定圖示和顏色
-                    if (primaryAlert.severity === 'critical' || primaryAlert.severity === 'high') {
-                        statusIcon = '⚠️';
-                        statusColorClass = 'text-red-700 dark:text-red-400';
-                    } else if (primaryAlert.severity === 'medium') {
-                        statusIcon = '⚠️';
-                        statusColorClass = 'text-orange-700 dark:text-orange-400';
-                    } else if (primaryAlert.severity === 'warning') {
-                        statusIcon = '⚠️';
-                        statusColorClass = 'text-yellow-700 dark:text-yellow-400';
-                    } else if (primaryAlert.severity === 'low' || primaryAlert.severity === 'info') {
-                        // 低風險或一般資訊，不使用驚嘆號
-                        statusIcon = '●';
-                        statusColorClass = 'text-emerald-700 dark:text-emerald-400';
-                    }
-                }
-                
-                // 不再需要單獨的 alertTextHTML，因為狀態文字區域已經顯示了警示文字
-                // 對於 status === 3，紅色框內會顯示完整的警示信息和建議處置
-                let alertTextHTML = '';
 
                 card.innerHTML = `
                     <div>
                         <div class="flex justify-between items-start mb-2">
-                            <div class="text-2xl font-bold text-slate-800 dark:text-white leading-tight break-words" style="max-width: 75%; word-break: break-all;">${bedDisplayText}</div>
+                            <div class="text-3xl font-bold text-slate-800 dark:text-white leading-tight">${bedDisplayText}</div>
                             <div class="flex flex-col items-end gap-1">
                                 ${batteryHTML}
                                 ${timeDisplayHTML}
                             </div>
                         </div>
                         
-                        <div class="text-base font-bold ${statusColorClass} mb-2 flex items-center gap-1 flex-wrap">
-                            ${statusIcon} ${statusText}${vitalInfoHTML}
+                        <div class="text-sm font-bold ${config.textCol} mb-2 flex items-center gap-1">
+                            ● ${config.text}
                         </div>
-                        
-                        ${alertTextHTML}
                         
                         ${durationHTML}
                     </div>
@@ -3042,16 +2301,6 @@
                 if(bed.type === 'ICU') icuContainer.appendChild(card);
                 else wardContainer.appendChild(card);
             });
-            
-            // 保存更新後的床位數據（包含 vitals）
-            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
-            storedBeds.forEach(updatedBed => {
-                const index = allBeds.findIndex(b => b.bed_number === updatedBed.bed_number);
-                if (index >= 0) {
-                    allBeds[index] = updatedBed;
-                }
-            });
-            localStorage.setItem('airdss_beds', JSON.stringify(allBeds));
             
             // 渲染圖示 (如果有使用 lucide)
             if(typeof lucide !== 'undefined') lucide.createIcons();
@@ -3067,18 +2316,26 @@
             // 使用 Web Audio API 生成統一的警示音
             try {
                 // 只在 AudioContext 已初始化且處於 running 狀態時才播放
-                // 注意：不在此處初始化 AudioContext，因為需要用戶手勢
-                // AudioContext 應該在用戶點擊警示音開關按鈕時初始化（toggleAlertSound）
                 if (!alertSoundContext) {
-                    // AudioContext 未初始化，靜默跳過（不會拋出錯誤）
-                    return;
+                    // 如果 AudioContext 未初始化，嘗試初始化（但可能失敗，因為沒有用戶手勢）
+                    try {
+                        alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
+                    } catch (e) {
+                        // 初始化失敗，靜默跳過
+                        return;
+                    }
                 }
                 
-                // 如果 AudioContext 處於 suspended 狀態，不嘗試 resume
-                // 因為 resume 也需要用戶手勢，應該在用戶點擊按鈕時處理
+                // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
                 if (alertSoundContext.state === 'suspended') {
-                    // 靜默跳過，不嘗試 resume（避免拋出錯誤）
-                    return;
+                    alertSoundContext.resume().catch(() => {
+                        // resume 失敗（通常是因為沒有用戶手勢），靜默跳過
+                        return;
+                    });
+                    // 如果 resume 後狀態仍不是 running，跳過播放
+                    if (alertSoundContext.state !== 'running') {
+                        return;
+                    }
                 }
                 
                 // 只有在 running 狀態時才播放
@@ -3120,19 +2377,11 @@
                     if (!alertSoundContext) {
                         alertSoundContext = new (window.AudioContext || window.webkitAudioContext)();
                     }
-                    // 如果 AudioContext 處於 suspended 狀態，嘗試 resume
-                    // 這是在用戶手勢（點擊）的上下文中，所以應該可以成功
                     if (alertSoundContext.state === 'suspended') {
-                        alertSoundContext.resume().then(() => {
-                            // resume 成功，AudioContext 現在應該處於 running 狀態
-                        }).catch((error) => {
-                            // resume 失敗，靜默處理（不顯示錯誤）
-                            console.debug('AudioContext resume failed:', error);
-                        });
+                        alertSoundContext.resume().catch(() => {});
                     }
                 } catch (error) {
-                    // 初始化失敗，靜默處理（不顯示錯誤）
-                    console.debug('AudioContext initialization failed:', error);
+                    // 靜默處理
                 }
                 icon.setAttribute('data-lucide', 'volume-2');
                 text.textContent = '警示音';
@@ -3279,6 +2528,7 @@
 
             if (bedNum) {
                 // === 編輯模式 ===
+                modalTitle.innerText = "編輯/修正 約束紀錄";
                 deleteBtn.classList.remove('hidden'); 
                 bedInput.disabled = true;
                 bedInput.classList.add('bg-slate-100', 'dark:bg-slate-700'); // 修正 dark mode
@@ -3289,12 +2539,6 @@
                 if (record) {
                     // ★ 關鍵：深拷貝 (Deep Copy) 一份原始資料，避免傳參考被修改
                     originalRecordState = JSON.parse(JSON.stringify(record));
-
-                    // 更新標題顯示床號和病歷號
-                    const bedDisplay = record.medical_record_id 
-                        ? `${bedNum} / ${record.medical_record_id}`
-                        : bedNum;
-                    modalTitle.innerText = `編輯/修正 約束紀錄 - ${bedDisplay}`;
 
                     document.getElementById('input-unit-type').value = record.type;
                     document.getElementById('input-bed').value = record.bed_number;
@@ -3639,16 +2883,6 @@
             }
         }
 
-        function handleRecordSearch() {
-            const currentTab = document.getElementById('rec-tab-active')?.classList.contains('bg-white') || 
-                              document.getElementById('rec-tab-active')?.classList.contains('bg-slate-700') ? 'active' : 'history';
-            if (currentTab === 'active') {
-                renderActiveRecords();
-            } else {
-                renderHistoryRecords();
-            }
-        }
-
         function renderActiveRecords() {
             // 確保只在病人約束紀錄管理頁面才渲染
             const patientRecordsSection = document.getElementById('patient-records');
@@ -3661,16 +2895,6 @@
             
             const allData = JSON.parse(localStorage.getItem('airdss_beds')) || [];
             let activeData = allData.filter(d => d.status !== 'archived');
-            
-            // 搜尋過濾（支援床號和病歷號）
-            const searchText = document.getElementById('rec-search')?.value.toUpperCase() || '';
-            if (searchText) {
-                activeData = activeData.filter(item => {
-                    const bedNumberMatch = item.bed_number.toUpperCase().includes(searchText);
-                    const medicalRecordMatch = item.medical_record_id && item.medical_record_id.toUpperCase().includes(searchText);
-                    return bedNumberMatch || medicalRecordMatch;
-                });
-            }
             
             // 按照 updated_at 降序排序（最新的在最上面）
             activeData.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -3707,14 +2931,14 @@
                 };
 
                 const bedDisplay = item.medical_record_id 
-                    ? `${item.bed_number} / ${item.medical_record_id}`
+                    ? `${item.bed_number}<br><span class="text-xs font-normal text-slate-500 dark:text-slate-400">${item.medical_record_id}</span>`
                     : item.bed_number;
                 
                 row.innerHTML = `
                     <div class="col-span-2 flex items-center gap-3">
                         <div class="w-1.5 h-8 rounded-full ${riskBar}"></div>
                         <div>
-                            <div class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 transition whitespace-nowrap">${bedDisplay}</div>
+                            <div class="font-bold text-lg text-slate-800 dark:text-white group-hover:text-blue-600 transition">${bedDisplay}</div>
                             <div class="text-xs text-slate-500 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded inline-block">
                                 ${item.type}
                             </div>
@@ -3759,20 +2983,8 @@
             
             const allData = JSON.parse(localStorage.getItem('airdss_beds')) || [];
             let historyData = allData.filter(d => d.status === 'archived');
-            
-            // 日期篩選
             const dateVal = document.getElementById('rec-filter-date')?.value;
             if(dateVal) historyData = historyData.filter(d => d.updated_at.startsWith(dateVal));
-            
-            // 搜尋過濾（支援床號和病歷號）
-            const searchText = document.getElementById('rec-search')?.value.toUpperCase() || '';
-            if (searchText) {
-                historyData = historyData.filter(item => {
-                    const bedNumberMatch = item.bed_number.toUpperCase().includes(searchText);
-                    const medicalRecordMatch = item.medical_record_id && item.medical_record_id.toUpperCase().includes(searchText);
-                    return bedNumberMatch || medicalRecordMatch;
-                });
-            }
             
             // 按照 updated_at 降序排序（最新的在最上面）
             historyData.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -3787,12 +2999,11 @@
                 const row = document.createElement('div');
                 row.className = "grid grid-cols-12 gap-4 px-6 py-3 items-center text-sm border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition";
                 const bedDisplayHistory = item.medical_record_id 
-                    ? `${item.bed_number} / ${item.medical_record_id}`
+                    ? `${item.bed_number}<br><span class="text-xs font-normal text-slate-400 dark:text-slate-500">${item.medical_record_id}</span>`
                     : item.bed_number;
-                // 使用 whitespace-nowrap 防止換行
                 
                 row.innerHTML = `
-                    <div class="col-span-2 font-mono font-bold text-slate-600 dark:text-slate-400 whitespace-nowrap">${bedDisplayHistory}</div>
+                    <div class="col-span-2 font-mono font-bold text-slate-600 dark:text-slate-400">${bedDisplayHistory}</div>
                     <div class="col-span-3 text-slate-500 dark:text-slate-400">${new Date(item.updated_at).toLocaleString()}</div>
                     <div class="col-span-3">
                         <span class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-1 rounded text-xs">手動解除/封存</span>
@@ -3821,22 +3032,8 @@
             
             modal.classList.remove('hidden');
             
-            // 載入封存紀錄資料
-            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
-            const record = allBeds.find(b => b.bed_number === bedNum);
-            
-            if (!record) {
-                customAlert('找不到該紀錄', "錯誤", "error").then(() => {
-                    closeModal('record-modal');
-                });
-                return;
-            }
-            
-            // 更新標題顯示床號和病歷號
-            const bedDisplay = record.medical_record_id 
-                ? `${bedNum} / ${record.medical_record_id}`
-                : bedNum;
-            modalTitle.innerText = `檢視快照 - ${bedDisplay}`;
+            // 設置為快照模式
+            modalTitle.innerText = `檢視快照 - ${bedNum}`;
             deleteBtn.classList.add('hidden');
             
             // 隱藏儲存按鈕，顯示匯出PDF按鈕
@@ -3857,6 +3054,17 @@
             lucide.createIcons();
             } else {
                 pdfBtn.style.display = 'flex';
+            }
+            
+            // 載入封存紀錄資料
+            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
+            const record = allBeds.find(b => b.bed_number === bedNum);
+            
+            if (!record) {
+                customAlert('找不到該紀錄', "錯誤", "error").then(() => {
+                    closeModal('record-modal');
+                });
+                return;
             }
             
             // 填充資料
@@ -3956,21 +3164,22 @@
             });
             
             const activeAlerts = criticalBeds.map(bed => {
-                // 使用新的警示檢測系統
-                const bedAlerts = detectBedAlerts(bed);
-                const primaryAlert = getPrimaryAlert(bedAlerts);
-                
-                // 顯示床號和病歷號
-                const bedDisplay = bed.medical_record_id 
-                    ? `${bed.bed_number} / ${bed.medical_record_id}`
-                    : bed.bed_number;
-                
+                // 判斷警報原因 (模擬邏輯)
+                let reason = "不明原因風險";
+                if (bed.type === 'ICU') {
+                    if (bed.crs.rass > 0) reason = `RASS 躁動指數過高 (${bed.crs.rass > 0 ? '+' + bed.crs.rass : bed.crs.rass})`;
+                    else if (bed.crs.tubeExposed) reason = "偵測到管路暴露";
+                    else reason = "綜合評估高風險 (TRS > 0.7)";
+                } else {
+                    if (bed.crs.fall == 3) reason = "高跌倒風險族群";
+                    else if (bed.restraint && bed.restraint.part_hand) reason = `持續拉扯約束部位 (${bed.restraint.part_hand})`;
+                }
+
                 return {
                     id: bed.bed_number,
                     type: 'critical',
-                    bed: bedDisplay,
-                    msg: primaryAlert ? primaryAlert.uiText : "不明原因風險",
-                    action: primaryAlert ? primaryAlert.action : "請檢查病患狀態",
+                    bed: bed.bed_number,
+                    msg: reason,
                     time: bed.updated_at,
                     rawTime: new Date(bed.updated_at)
                 };
@@ -4047,7 +3256,6 @@
                             <div class="${isCritical ? 'text-red-700 dark:text-red-400 font-bold' : 'text-slate-600 dark:text-slate-400'} text-sm flex items-center gap-2">
                                 ${isCritical ? '⚠️' : ''} ${alert.msg}
                             </div>
-                            ${alert.action ? `<div class="text-xs text-slate-600 dark:text-slate-300 mt-2"><span class="font-semibold">建議處置：</span>${alert.action}</div>` : ''}
                             <div class="text-xs text-slate-400 dark:text-slate-500 font-mono mt-1 md:hidden">${timeStr}</div>
                         </div>
                         
@@ -4155,7 +3363,7 @@
             customConfirm("確定要登出嗎?").then(result => {
                 if(result) {
                 localStorage.removeItem('isLoggedIn');
-                window.location.href = 'login.html';
+                window.location.href = 'main.html';
             }
             });
         }
@@ -4294,11 +3502,6 @@
             const time = document.getElementById('input-time').value.replace('T', ' ');
             const recorder = localStorage.getItem('user') || 'Admin';
             
-            // 先從 localStorage 讀取完整記錄（用於檢視快照等情況）
-            let recordData = null;
-            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
-            recordData = allBeds.find(b => b.bed_number === bedNum);
-            
             // --- 填入資料 (Data Mapping) ---
             document.getElementById('pdf-print-date').innerText = new Date().toLocaleString();
             // 獲取病歷號
@@ -4320,6 +3523,11 @@
             const scoreNum = parseInt(scoreText);
             document.getElementById('pdf-status').innerText = scoreNum >= 10 ? "極高風險" : (scoreNum >= 4 ? "中度風險" : "低風險");
 
+            // 嘗試從 localStorage 讀取完整記錄（用於檢視快照等情況）
+            let recordData = null;
+            const allBeds = JSON.parse(localStorage.getItem('airdss_beds')) || [];
+            recordData = allBeds.find(b => b.bed_number === bedNum);
+            
             // 生成完整的 CRS 詳細資訊
             let crsDetailHTML = "";
             if(unitType === 'ICU') {
