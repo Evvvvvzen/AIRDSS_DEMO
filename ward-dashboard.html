@@ -248,7 +248,7 @@
                                 <div>
                                     <h3 class="font-bold text-lg flex items-center gap-2 text-slate-800 dark:text-white">
                                         CRS 臨床評估 (病房版)
-                                        <span id="crs-total" class="text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded">0 / 14分</span>
+                                        <span id="crs-total" class="text-emerald-600 dark:text-emerald-400 text-sm bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded">0 / 12分</span>
                                     </h3>
                                     <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">權重 40% (跌倒/陪伴/管路)</p>
                                 </div>
@@ -496,10 +496,10 @@
             if(tRadio) score += parseInt(tRadio.value);
             if(document.getElementById('ward-tube-exposed').checked) score += 1;
 
-            if(score > 14) score = 14;
-            let normCrs = score / 14;
+            if(score > 12) score = 12;
+            let normCrs = score / 12;
             document.getElementById('card-crs').innerText = score;
-            document.getElementById('crs-total').innerText = `${score} / 14分`;
+            document.getElementById('crs-total').innerText = `${score} / 12分`;
 
             // TRS Logic (Hybrid or ARS Only)
             let trs = 0;
@@ -562,13 +562,13 @@
                 } else {
                     // Simulation (Raw Score Logic)
                     let sArs = Math.max(0, Math.min(10, ars + Math.floor(Math.random()*3 - 1)));
-                    let sCrs = Math.max(0, Math.min(14, crs + Math.floor(Math.random()*3 - 1)));
+                    let sCrs = Math.max(0, Math.min(12, crs + Math.floor(Math.random()*3 - 1)));
                     
                     // Recalc simulated TRS based on mode
                     let sTrs = 0;
                     if(isCRSValid) {
-                        // Formula: (ARS/10 * 0.6 + CRS/14 * 0.4) * 10
-                        sTrs = ((sArs/10)*0.6 + (sCrs/14)*0.4) * 10;
+                        // Formula: (ARS/10 * 0.6 + CRS/12 * 0.4) * 10 (病房版 CRS 滿分 12)
+                        sTrs = ((sArs/10)*0.6 + (sCrs/12)*0.4) * 10;
                     } else {
                         sTrs = sArs;
                     }
@@ -599,7 +599,7 @@
                             pointHoverRadius: 6 
                         },
                         { 
-                            label: 'CRS 臨床評估 (0-14)', 
+                            label: 'CRS 臨床評估 (0-12)', 
                             data: dCRS, 
                             borderColor: '#3b82f6', // Blue-500 (統一為藍色)
                             backgroundColor: 'transparent',

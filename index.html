@@ -149,6 +149,9 @@
                         <button onclick="generateMockData()" class="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 shadow-sm flex items-center gap-2">
                             <i data-lucide="flask-conical" class="w-3 h-3"></i> 測試資料
                         </button>
+                        <button onclick="clearAllTestData()" class="text-sm bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700 shadow-sm flex items-center gap-2">
+                            <i data-lucide="trash-2" class="w-3 h-3"></i> 清除測試資料
+                        </button>
                         <button onclick="renderBeds()" class="text-sm bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded hover:bg-slate-50 dark:hover:bg-slate-600 shadow-sm flex items-center gap-1">
                             <i data-lucide="refresh-cw" class="w-3 h-3"></i> 刷新
                         </button>
@@ -389,7 +392,7 @@
                     </h4>
                     
                     <div class="mb-4">
-                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">約束目的 (可複選)</label>
+                        <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">約束目的 (可複選) <span class="text-red-500">*必填</span></label>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm mb-2 text-slate-600 dark:text-slate-400">
                             <label class="flex items-center gap-2 cursor-pointer hover:text-blue-600 transition"><input type="checkbox" name="res_purpose" value="medical" class="accent-blue-600"> 醫療處置需要或協助治療</label>
                             <label class="flex items-center gap-2 cursor-pointer hover:text-blue-600 transition"><input type="checkbox" name="res_purpose" value="fall" class="accent-blue-600"> 預防跌倒</label>
@@ -404,7 +407,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4 bg-slate-50 dark:bg-slate-900/50 p-4 rounded border dark:border-slate-700">
                         <div>
-                            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">告知同意</label>
+                            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">告知同意 <span class="text-red-500">*必填</span></label>
                             <label class="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-400 cursor-pointer hover:text-blue-600 transition">
                                 <input type="checkbox" id="res_consent" class="mt-1 accent-blue-600">
                                 <span class="leading-relaxed">向病人及家屬說明約束之目的及方式，且能理解約束之必要性，同意執行並填妥約束同意書</span>
@@ -421,7 +424,7 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6 border-b dark:border-slate-700 pb-6">
                         <div>
-                            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">約束方式</label>
+                            <label class="text-sm font-bold text-slate-700 dark:text-slate-300 block mb-2">約束方式 <span class="text-red-500">*必填</span></label>
                             <div class="flex flex-col gap-2 text-sm text-slate-600 dark:text-slate-400">
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="res_method" value="約束帶" class="accent-blue-600"> 約束帶</label>
                                 <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" name="res_method" value="兵乓球拍約束拍" class="accent-blue-600"> 兵乓球拍約束拍</label>
@@ -734,8 +737,9 @@
                 else crsScore += tubeBase;
             }
             
-            if (crsScore > 14) crsScore = 14;
-            const normCrs = crsScore / 14;
+            const crsMax = unitType === 'Ward' ? 12 : 14;
+            if (crsScore > crsMax) crsScore = crsMax;
+            const normCrs = crsScore / crsMax;
             
             // TRS 計算：如果有 ARS 資料，使用實際的 ARS；否則使用簡化版（僅 CRS）
             if (arsData) {
@@ -1011,8 +1015,26 @@
                         </div>
 
                         <div class="bg-blue-50/50 dark:bg-slate-700 p-3 rounded-lg border border-blue-100 dark:border-slate-600">
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-300 mb-1 block">GCS 昏迷指數 (0-2)</label>
+                            <select id="input-gcs" onchange="updateCalc()" class="w-full text-sm border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 rounded p-2 font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-colors">
+                                <option value="0">&lt;8 或 15 (0分)</option>
+                                <option value="1">13-14 (1分)</option>
+                                <option value="2">9-12 (2分)</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-blue-50/50 dark:bg-slate-700 p-3 rounded-lg border border-blue-100 dark:border-slate-600">
+                            <label class="text-xs font-bold text-slate-500 dark:text-slate-300 mb-1 block">Pain 疼痛評估 (0-2)</label>
+                            <select id="input-pain" onchange="updateCalc()" class="w-full text-sm border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 rounded p-2 font-bold text-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition-colors">
+                                <option value="0">0-3 (0分)</option>
+                                <option value="1">4-6 (1分)</option>
+                                <option value="2">≥7 (2分)</option>
+                            </select>
+                        </div>
+
+                        <div class="bg-blue-50/50 dark:bg-slate-700 p-3 rounded-lg border border-blue-100 dark:border-slate-600">
                             <label class="text-xs font-bold text-slate-500 dark:text-slate-300 mb-1 block">APACHE II 分數 (僅參考)</label>
-                            <input id="input-apache" type="number" onchange="updateCalc()" 
+                            <input id="input-apache" type="number" min="0" max="71" oninput="validateApache(); updateCalc()" onchange="validateApache(); updateCalc()" 
                                 class="w-full text-sm border border-slate-300 dark:border-slate-500 bg-white dark:bg-slate-800 rounded p-2 text-slate-700 dark:text-white placeholder-slate-400 focus:ring-2 focus:ring-blue-500 outline-none transition-colors" 
                                 placeholder="輸入分數 (0-71)">
                         </div>
@@ -1025,8 +1047,6 @@
                             </label>
                         </div>
                         
-                        <input type="hidden" id="input-gcs" value="0">
-                        <input type="hidden" id="input-pain" value="0">
                         <div id="tube-exposed-wrapper" style="display:none"></div>
                     </div>
                 </div>
@@ -1041,7 +1061,7 @@
                         <div>
                             <h3 class="font-bold text-lg flex items-center gap-2 text-slate-800 dark:text-white">
                                 <i data-lucide="bed" class="w-4 h-4"></i> CRS 臨床評估 (病房版)
-                                <span id="crs-total" class="text-emerald-600 dark:text-emerald-300 text-sm bg-emerald-50 dark:bg-emerald-900/50 px-2 py-0.5 rounded">0 / 14分</span>
+                                <span id="crs-total" class="text-emerald-600 dark:text-emerald-300 text-sm bg-emerald-50 dark:bg-emerald-900/50 px-2 py-0.5 rounded">0 / 12分</span>
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">關注跌倒、陪伴與環境因子 (權重 40%)</p>
                         </div>
@@ -1154,6 +1174,21 @@
             });
             return;
         }
+
+        async function clearAllTestData() {
+            customConfirm("確定要清除所有測試資料嗎？\n此操作將刪除所有床位與約束紀錄，無法復原。").then(async result => {
+                if (!result) return;
+                localStorage.setItem('airdss_beds', JSON.stringify([]));
+                renderBeds();
+                if (currentRecordTab === 'active') {
+                    renderActiveRecords();
+                } else {
+                    renderHistoryRecords();
+                }
+                renderAlerts();
+                await customAlert("所有測試資料已清除。", "成功", "success");
+            });
+        }
         
         // 輔助函數：計算 TRS（用於測試資料生成）
         function calculateTRSForMock(crs, ars, unitType) {
@@ -1184,8 +1219,9 @@
                 else crsScore += tubeBase;
             }
             
-            if (crsScore > 14) crsScore = 14;
-            const normCrs = crsScore / 14;
+            const crsMax = unitType === 'Ward' ? 12 : 14;
+            if (crsScore > crsMax) crsScore = crsMax;
+            const normCrs = crsScore / crsMax;
             
             if (ars) {
                 let arsScore = 0;
@@ -2417,6 +2453,14 @@
             if(unitType === 'ICU') updateCalc(); 
         }
 
+        function validateApache() {
+            const el = document.getElementById('input-apache');
+            if (!el) return;
+            let val = parseInt(el.value, 10);
+            if (isNaN(val) || val < 0) el.value = '';
+            else if (val > 71) el.value = '71';
+        }
+
         function updateCalc() {
             const unitType = document.getElementById('input-unit-type').value;
             let score = 0;
@@ -2436,11 +2480,10 @@
                 }
                 
                 score += parseInt(document.getElementById('input-cam')?.value || 0);
+                score += parseInt(document.getElementById('input-gcs')?.value || 0);
+                score += parseInt(document.getElementById('input-pain')?.value || 0);
                 
-                // ★★★ 修正點：APACHE II 不應直接加入總分 (因為它是 0-71 分) ★★★
-                // 原本是: score += parseInt(document.getElementById('input-apache')?.value || 0);
-                // 改為不加總 (或您可改為：若 >20 則 +1，視貴院規則而定)
-                // 這裡我們先不加，避免分數爆表變成 14/14
+                // APACHE II 僅參考，不加入總分 (0-71 分)
                 
                 if (document.getElementById('input-mod')?.checked) score += 1;
 
@@ -2481,9 +2524,10 @@
                 score += tubeScore;
             }
 
-            if(score > 14) score = 14;
+            const maxScore = unitType === 'Ward' ? 12 : 14;
+            if(score > maxScore) score = maxScore;
             const totalEl = document.getElementById('crs-total');
-            if(totalEl) totalEl.innerText = `${score} / 14分`;
+            if(totalEl) totalEl.innerText = `${score} / ${maxScore}分`;
         }
         
         function resetCRS() {
@@ -2790,6 +2834,22 @@
                 measure: Array.from(document.querySelectorAll('input[name="res_measure"]:checked')).map(cb => cb.parentNode.textContent.trim())
                 // remark: 已移除，由 timeline 取代
             };
+
+            // 約束必填驗證
+            const purposes = document.querySelectorAll('input[name="res_purpose"]:checked');
+            const methods = document.querySelectorAll('input[name="res_method"]:checked');
+            if (purposes.length === 0) {
+                customAlert("請至少選擇一項約束目的", "提示", "warning");
+                return;
+            }
+            if (!document.getElementById('res_consent').checked) {
+                customAlert("請勾選「告知同意」", "提示", "warning");
+                return;
+            }
+            if (methods.length === 0) {
+                customAlert("請至少選擇一項約束方式", "提示", "warning");
+                return;
+            }
 
             // 3. 自動判斷狀態
             let status = 2;

@@ -552,8 +552,9 @@
                 else crsScore += tubeBase;
             }
             
-            if (crsScore > 14) crsScore = 14;
-            const normCrs = crsScore / 14;
+            const crsMax = unitType === 'Ward' ? 12 : 14;
+            if (crsScore > crsMax) crsScore = crsMax;
+            const normCrs = crsScore / crsMax;
             
             if (arsData) {
                 let arsScore = 0;
